@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Funds — PropertyDSS</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="app-page">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PropertyDSS</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a href="properties.html" class="nav-item"><span class="nav-icon">⌂</span> Properties</a>
+      <a href="requests.html" class="nav-item"><span class="nav-icon">◎</span> Maintenance</a>
+      <a href="funds.html" class="nav-item active"><span class="nav-icon">◈</span> Funds</a>
+      <a href="reports.html" class="nav-item"><span class="nav-icon">≡</span> Reports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">F</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name">Loading…</span>
+          <span class="user-role-badge" id="user-role-badge">—</span>
+        </div>
+      </div>
+      <button class="btn-signout" id="signout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="page-title-area">
+        <h2 class="page-title">Maintenance Funds</h2>
+        <p class="page-subtitle">Track fund balances and allocations</p>
+      </div>
+      <button class="btn-primary admin-only hidden" id="add-fund-btn">+ Add Fund</button>
+    </header>
+
+    <div class="funds-grid" id="funds-grid">
+      <div class="loading-state">Loading funds…</div>
+    </div>
+
+    <!-- Allocation Section (Admin) -->
+    <section class="panel admin-only hidden" id="allocation-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Allocate Funds to Requests</h3>
+        <span class="panel-badge">DSS-ranked order</span>
+      </div>
+      <p class="allocation-info">Select a fund and allocate to pending requests in priority order.</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Select Fund</label>
+          <select id="alloc-fund-select"></select>
+        </div>
+        <div class="form-group fund-balance-display">
+          <label>Available Balance</label>
+          <div class="balance-value" id="alloc-balance">—</div>
+        </div>
+      </div>
+      <div id="alloc-requests-list" class="alloc-requests">
+        <p class="empty-state">Select a fund to see eligible requests.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add Fund Modal -->
+  <div class="modal-overlay hidden" id="fund-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="fund-modal-title">Add Maintenance Fund</h3>
+        <button class="modal-close" id="close-fund-modal">✕</button>
+      </div>
+      <form id="fund-form" class="modal-form">
+        <input type="hidden" id="fund-id" />
+        <div class="form-group">
+          <label>Property</label>
+          <select id="fund-property" required></select>
+        </div>
+        <div class="form-group">
+          <label>Period (e.g. Q1 2026)</label>
+          <input type="text" id="fund-period" required placeholder="Q2 2026" />
+        </div>
+        <div class="form-group">
+          <label>Total Amount (₦)</label>
+          <input type="number" id="fund-total" required min="0" step="1000" />
+        </div>
+        <div id="fund-error" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancel-fund-modal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Fund</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/funds.js"></script>
+</body>
+</html>

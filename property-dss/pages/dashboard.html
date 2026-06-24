@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — PropertyDSS</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="app-page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PropertyDSS</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">⊞</span> Dashboard
+      </a>
+      <a href="properties.html" class="nav-item" data-page="properties">
+        <span class="nav-icon">⌂</span> Properties
+      </a>
+      <a href="requests.html" class="nav-item" data-page="requests">
+        <span class="nav-icon">◎</span> Maintenance
+      </a>
+      <a href="funds.html" class="nav-item" data-page="funds">
+        <span class="nav-icon">◈</span> Funds
+      </a>
+      <a href="reports.html" class="nav-item" data-page="reports">
+        <span class="nav-icon">≡</span> Reports
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">F</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name">Loading…</span>
+          <span class="user-role-badge" id="user-role-badge">—</span>
+        </div>
+      </div>
+      <button class="btn-signout" id="signout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="page-title-area">
+        <h2 class="page-title">Dashboard</h2>
+        <p class="page-subtitle">Overview of maintenance fund allocation status</p>
+      </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Properties</div>
+        <div class="kpi-value" id="kpi-properties">—</div>
+        <div class="kpi-sub">managed</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending Requests</div>
+        <div class="kpi-value" id="kpi-pending">—</div>
+        <div class="kpi-sub">awaiting allocation</div>
+      </div>
+      <div class="kpi-card kpi-urgent">
+        <div class="kpi-label">Critical (Score ≥ 8)</div>
+        <div class="kpi-value" id="kpi-critical">—</div>
+        <div class="kpi-sub">needs immediate action</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Funds Available</div>
+        <div class="kpi-value" id="kpi-funds">—</div>
+        <div class="kpi-sub">across all properties</div>
+      </div>
+    </section>
+
+    <!-- Priority Queue -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Priority Queue</h3>
+        <span class="panel-badge">Ranked by DSS Engine</span>
+      </div>
+      <div class="priority-queue" id="priority-queue">
+        <div class="loading-state">Computing priority scores…</div>
+      </div>
+    </section>
+
+    <!-- Recent Properties -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Recent Properties</h3>
+        <a href="properties.html" class="panel-link">View all →</a>
+      </div>
+      <div class="property-list" id="recent-properties">
+        <div class="loading-state">Loading properties…</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

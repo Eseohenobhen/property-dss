@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PropertyDSS — Maintenance Fund Allocation System</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="auth-page">
+
+  <!-- Auth Container -->
+  <div class="auth-split">
+    <!-- Left Panel: Brand -->
+    <div class="auth-brand">
+      <div class="brand-inner">
+        <div class="brand-logo">
+          <span class="logo-icon">⬡</span>
+          <span class="logo-text">PropertyDSS</span>
+        </div>
+        <h1 class="brand-headline">Smart decisions<br/>for every repair.</h1>
+        <p class="brand-sub">A computerized decision support system for maintenance fund allocation — objective, transparent, fair.</p>
+
+        <div class="priority-legend">
+          <p class="legend-label">Built-in priority hierarchy</p>
+          <div class="priority-item p1"><span class="pi-badge">1</span>Roofing &amp; Structural</div>
+          <div class="priority-item p2"><span class="pi-badge">2</span>Electrical &amp; Plumbing</div>
+          <div class="priority-item p3"><span class="pi-badge">3</span>HVAC &amp; Security</div>
+          <div class="priority-item p4"><span class="pi-badge">4</span>Flooring &amp; Finishes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Auth Forms -->
+    <div class="auth-form-panel">
+      <div class="auth-form-card">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="login">Sign In</button>
+          <button class="tab-btn" data-tab="register">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-email">Email address</label>
+            <input type="email" id="login-email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" required />
+          </div>
+          <div id="login-error" class="form-error hidden"></div>
+          <button type="submit" class="btn-primary" id="login-btn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loader hidden">Signing in…</span>
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label for="reg-name">Full name</label>
+            <input type="text" id="reg-name" placeholder="Favour Eseohe" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email address</label>
+            <input type="email" id="reg-email" placeholder="you@example.com" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" placeholder="Min. 8 characters" required minlength="8" />
+          </div>
+          <div class="form-group">
+            <label>Account type</label>
+            <div class="role-selector">
+              <label class="role-option">
+                <input type="radio" name="role" value="manager" checked />
+                <span class="role-card">
+                  <span class="role-icon">👁</span>
+                  <strong>Manager</strong>
+                  <small>View property info &amp; reports</small>
+                </span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="role" value="admin" />
+                <span class="role-card">
+                  <span class="role-icon">⚙</span>
+                  <strong>Admin</strong>
+                  <small>Full access — manage &amp; update</small>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div id="reg-error" class="form-error hidden"></div>
+          <button type="submit" class="btn-primary" id="reg-btn">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-loader hidden">Creating…</span>
+          </button>
+        </form>
+
+        <p class="auth-footer">By continuing you agree to responsible data stewardship.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

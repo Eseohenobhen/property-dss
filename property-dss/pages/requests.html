@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance — PropertyDSS</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="app-page">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PropertyDSS</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a href="properties.html" class="nav-item"><span class="nav-icon">⌂</span> Properties</a>
+      <a href="requests.html" class="nav-item active"><span class="nav-icon">◎</span> Maintenance</a>
+      <a href="funds.html" class="nav-item"><span class="nav-icon">◈</span> Funds</a>
+      <a href="reports.html" class="nav-item"><span class="nav-icon">≡</span> Reports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">F</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name">Loading…</span>
+          <span class="user-role-badge" id="user-role-badge">—</span>
+        </div>
+      </div>
+      <button class="btn-signout" id="signout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="page-title-area">
+        <h2 class="page-title">Maintenance Requests</h2>
+        <p class="page-subtitle">All requests ranked by DSS priority score</p>
+      </div>
+      <button class="btn-primary admin-only hidden" id="add-request-btn">+ New Request</button>
+    </header>
+
+    <div class="filter-bar">
+      <select id="filter-property" class="filter-select">
+        <option value="">All properties</option>
+      </select>
+      <select id="filter-status" class="filter-select">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="deferred">Deferred</option>
+      </select>
+      <select id="filter-category" class="filter-select">
+        <option value="">All categories</option>
+        <option value="roofing">Roofing</option>
+        <option value="structural">Structural</option>
+        <option value="electrical">Electrical</option>
+        <option value="plumbing">Plumbing</option>
+        <option value="hvac">HVAC</option>
+        <option value="flooring">Flooring</option>
+        <option value="painting">Painting</option>
+        <option value="security">Security</option>
+        <option value="landscaping">Landscaping</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="requests-table-wrap">
+      <table class="data-table" id="requests-table">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Title</th>
+            <th>Property</th>
+            <th>Category</th>
+            <th>Score</th>
+            <th>Est. Cost (₦)</th>
+            <th>Status</th>
+            <th class="admin-only hidden">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="requests-tbody">
+          <tr><td colspan="8" class="loading-state">Loading requests…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Add/Edit Request Modal (Admin) -->
+  <div class="modal-overlay hidden" id="request-modal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 id="req-modal-title">New Maintenance Request</h3>
+        <button class="modal-close" id="close-request-modal">✕</button>
+      </div>
+      <form id="request-form" class="modal-form">
+        <input type="hidden" id="req-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Property</label>
+            <select id="req-property" required></select>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="req-category" required>
+              <option value="roofing">🏠 Roofing (Highest Priority)</option>
+              <option value="structural">🏗 Structural</option>
+              <option value="electrical">⚡ Electrical</option>
+              <option value="plumbing">🔧 Plumbing</option>
+              <option value="hvac">❄ HVAC</option>
+              <option value="security">🔒 Security</option>
+              <option value="flooring">▭ Flooring</option>
+              <option value="painting">🎨 Painting</option>
+              <option value="landscaping">🌿 Landscaping</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="req-title" required placeholder="e.g. Roof leak in Block C Unit 4" />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="req-description" rows="3" placeholder="Detailed description of the issue…"></textarea>
+        </div>
+        <div class="form-row three-col">
+          <div class="form-group">
+            <label>Urgency <span class="scale-hint">(1–10)</span></label>
+            <input type="number" id="req-urgency" required min="1" max="10" value="5" />
+            <small>10 = life-threatening</small>
+          </div>
+          <div class="form-group">
+            <label>Impact <span class="scale-hint">(1–10)</span></label>
+            <input type="number" id="req-impact" required min="1" max="10" value="5" />
+            <small>10 = severe damage/safety risk</small>
+          </div>
+          <div class="form-group">
+            <label>Asset Importance <span class="scale-hint">(1–10)</span></label>
+            <input type="number" id="req-asset" required min="1" max="10" value="5" />
+            <small>10 = core infrastructure</small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Estimated Cost (₦)</label>
+            <input type="number" id="req-cost" required min="0" step="1000" placeholder="500000" />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="req-status">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="deferred">Deferred</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          <input type="text" id="req-assigned" placeholder="Contractor or team name" />
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="req-notes" rows="2" placeholder="Additional notes…"></textarea>
+        </div>
+        <div class="score-preview" id="score-preview">
+          <span class="score-label">Estimated Priority Score:</span>
+          <span class="score-value" id="live-score">—</span>
+        </div>
+        <div id="req-error" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancel-request-modal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/requests.js"></script>
+</body>
+</html>

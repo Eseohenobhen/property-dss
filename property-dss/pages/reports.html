@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports — PropertyDSS</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="app-page">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PropertyDSS</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a href="properties.html" class="nav-item"><span class="nav-icon">⌂</span> Properties</a>
+      <a href="requests.html" class="nav-item"><span class="nav-icon">◎</span> Maintenance</a>
+      <a href="funds.html" class="nav-item"><span class="nav-icon">◈</span> Funds</a>
+      <a href="reports.html" class="nav-item active"><span class="nav-icon">≡</span> Reports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">F</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name">Loading…</span>
+          <span class="user-role-badge" id="user-role-badge">—</span>
+        </div>
+      </div>
+      <button class="btn-signout" id="signout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="page-title-area">
+        <h2 class="page-title">Reports</h2>
+        <p class="page-subtitle">Transparency and accountability for all stakeholders</p>
+      </div>
+      <button class="btn-secondary" id="print-report-btn">⬇ Export PDF</button>
+    </header>
+
+    <!-- Report Filters -->
+    <div class="filter-bar">
+      <select id="report-property" class="filter-select">
+        <option value="">All properties</option>
+      </select>
+      <select id="report-period" class="filter-select">
+        <option value="">All periods</option>
+      </select>
+    </div>
+
+    <!-- Summary Cards -->
+    <section class="kpi-grid" id="report-kpis"></section>
+
+    <!-- Category Breakdown -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Requests by Category</h3>
+      </div>
+      <div class="chart-area" id="category-chart"></div>
+    </section>
+
+    <!-- Allocation History -->
+    <section class="panel" id="allocation-history-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Fund Allocation History</h3>
+        <span class="panel-badge">Full audit trail</span>
+      </div>
+      <div class="requests-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Property</th>
+              <th>Request</th>
+              <th>Category</th>
+              <th>Amount Allocated (₦)</th>
+              <th>Allocated By</th>
+            </tr>
+          </thead>
+          <tbody id="allocation-history-tbody">
+            <tr><td colspan="6" class="loading-state">Loading allocation history…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Deferred Requests -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Deferred & Pending Requests</h3>
+        <span class="panel-badge danger">Needs attention</span>
+      </div>
+      <div id="deferred-list" class="priority-queue">
+        <div class="loading-state">Loading…</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/reports.js"></script>
+</body>
+</html>

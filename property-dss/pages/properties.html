@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Properties — PropertyDSS</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="app-page">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PropertyDSS</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-item" data-page="dashboard"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a href="properties.html" class="nav-item active" data-page="properties"><span class="nav-icon">⌂</span> Properties</a>
+      <a href="requests.html" class="nav-item" data-page="requests"><span class="nav-icon">◎</span> Maintenance</a>
+      <a href="funds.html" class="nav-item" data-page="funds"><span class="nav-icon">◈</span> Funds</a>
+      <a href="reports.html" class="nav-item" data-page="reports"><span class="nav-icon">≡</span> Reports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">F</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name">Loading…</span>
+          <span class="user-role-badge" id="user-role-badge">—</span>
+        </div>
+      </div>
+      <button class="btn-signout" id="signout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+      <div class="page-title-area">
+        <h2 class="page-title">Properties</h2>
+        <p class="page-subtitle">Manage and view property records</p>
+      </div>
+      <!-- Admin only -->
+      <button class="btn-primary admin-only hidden" id="add-property-btn">+ Add Property</button>
+    </header>
+
+    <!-- Search / Filter -->
+    <div class="filter-bar">
+      <input type="text" id="search-properties" placeholder="Search by name or address…" class="filter-input" />
+      <select id="filter-type" class="filter-select">
+        <option value="">All types</option>
+        <option value="residential">Residential</option>
+        <option value="apartment">Apartment</option>
+        <option value="commercial">Commercial</option>
+      </select>
+    </div>
+
+    <!-- Properties Grid -->
+    <div class="property-grid" id="property-grid">
+      <div class="loading-state">Loading properties…</div>
+    </div>
+  </main>
+
+  <!-- Add/Edit Property Modal (Admin only) -->
+  <div class="modal-overlay hidden" id="property-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Add Property</h3>
+        <button class="modal-close" id="close-property-modal">✕</button>
+      </div>
+      <form id="property-form" class="modal-form">
+        <input type="hidden" id="prop-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Property Name</label>
+            <input type="text" id="prop-name" required placeholder="Sunrise Estate Block A" />
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="prop-type" required>
+              <option value="residential">Residential</option>
+              <option value="apartment">Apartment</option>
+              <option value="commercial">Commercial</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="prop-address" required placeholder="12 Jakande Close, Benin City" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Units</label>
+            <input type="number" id="prop-units" required min="1" value="1" />
+          </div>
+          <div class="form-group">
+            <label>Year Built</label>
+            <input type="number" id="prop-year" placeholder="2015" min="1900" max="2100" />
+          </div>
+          <div class="form-group">
+            <label>Area (sqm)</label>
+            <input type="number" id="prop-area" placeholder="1200" step="0.01" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="prop-desc" rows="3" placeholder="Brief description of the property…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="prop-status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div id="prop-error" class="form-error hidden"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancel-property-modal">Cancel</button>
+          <button type="submit" class="btn-primary">Save Property</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Property Detail Modal -->
+  <div class="modal-overlay hidden" id="property-detail-modal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 id="detail-prop-name">Property Details</h3>
+        <button class="modal-close" id="close-detail-modal">✕</button>
+      </div>
+      <div id="property-detail-content" class="detail-content"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/properties.js"></script>
+</body>
+</html>
