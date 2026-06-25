@@ -13,7 +13,6 @@ export function clearToken() {
   if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_KEY);
 }
 
-// Core fetch wrapper. Attaches the bearer token, parses JSON, throws on error.
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) {

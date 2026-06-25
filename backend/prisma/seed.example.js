@@ -1,28 +1,10 @@
-// ----------------------------------------------------------------------------
-// Example database seed.
-//
-// This file ships with the repository so a fresh clone can be bootstrapped, but
-// it contains NO hard-coded credentials — the admin/manager passwords are read
-// from environment variables (with obvious placeholder fallbacks).
-//
-// To use it:
-//   1. cp prisma/seed.example.js prisma/seed.js   (seed.js is git-ignored)
-//   2. Set the SEED_* variables in backend/.env, or accept the placeholders
-//      below and change the passwords after first login.
-//   3. npm run seed
-//
-// The seed creates one ADMIN account (the only way to get an admin, since public
-// registration only creates Managers) plus sample properties/requests/funds so
-// the dashboard and DSS recommendations have data to work with.
-// ----------------------------------------------------------------------------
-
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { computePriorityScore } from '../src/services/dss.js';
 
 const prisma = new PrismaClient();
 
-// Credentials come from the environment so none are committed to the repo.
+// Credentials come from the environment 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'change-me-admin';
 const MANAGER_EMAIL = process.env.SEED_MANAGER_EMAIL || 'manager@example.com';
@@ -31,14 +13,14 @@ const MANAGER_PASSWORD = process.env.SEED_MANAGER_PASSWORD || 'change-me-manager
 async function main() {
   console.log('Seeding database…');
 
-  // ---- Clear existing data (safe for a demo DB) ----
+  // Clear existing data (safe for a demo DB)
   await prisma.fundAllocation.deleteMany();
   await prisma.maintenanceFund.deleteMany();
   await prisma.maintenanceRequest.deleteMany();
   await prisma.property.deleteMany();
   await prisma.user.deleteMany();
 
-  // ---- Users ----
+  //  Users
   const adminPw = await bcrypt.hash(ADMIN_PASSWORD, 10);
   const managerPw = await bcrypt.hash(MANAGER_PASSWORD, 10);
 
@@ -49,7 +31,7 @@ async function main() {
     data: { fullName: 'Demo Manager', email: MANAGER_EMAIL, passwordHash: managerPw, role: 'MANAGER' },
   });
 
-  // ---- Properties ----
+  // Properties
   const sunrise = await prisma.property.create({
     data: {
       name: 'Sunrise Estate Block A',
@@ -90,7 +72,7 @@ async function main() {
     },
   });
 
-  // ---- Maintenance requests ----
+  // Maintenance requests
   const requestSeeds = [
     { property: sunrise, title: 'Leaking roof over Flat 3B', category: 'ROOFING', urgency: 9, impact: 8, assetImportance: 9, estimatedCost: 450000, status: 'PENDING', description: 'Water ingress damaging ceiling during rains.' },
     { property: sunrise, title: 'Cracked load-bearing wall, stairwell', category: 'STRUCTURAL', urgency: 8, impact: 9, assetImportance: 10, estimatedCost: 1200000, status: 'PENDING', description: 'Visible diagonal crack; needs engineer assessment.' },
@@ -125,7 +107,7 @@ async function main() {
     });
   }
 
-  // ---- Funds ----
+  // Funds
   await prisma.maintenanceFund.create({
     data: { propertyId: sunrise.id, totalAmount: 1500000, allocatedAmount: 0, periodLabel: 'Q1 2026' },
   });
@@ -137,8 +119,8 @@ async function main() {
   });
 
   console.log('Seed complete.');
-  console.log(`  Admin    →  ${ADMIN_EMAIL}`);
-  console.log(`  Manager  →  ${MANAGER_EMAIL}`);
+  console.log(`  Admin   ${ADMIN_EMAIL}`);
+  console.log(`  Manager  ${MANAGER_EMAIL}`);
   console.log('  (Passwords are whatever you set via SEED_* env vars — change them after first login.)');
 }
 

@@ -11,9 +11,7 @@ const REQUEST_STATUS = ['PENDING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'DEFE
 
 export const enums = { ROLES, PROPERTY_TYPES, PROPERTY_STATUS, CATEGORIES, REQUEST_STATUS };
 
-// ---- Auth ----
-// Note: role is intentionally NOT accepted here. Public sign-ups are always
-// Managers; the controller assigns the role. Admins are created via seeding.
+// Auth
 export const registerSchema = z.object({
   fullName: z.string().trim().min(2, 'Full name is required'),
   email: z.string().trim().toLowerCase().email('A valid email is required'),
@@ -25,7 +23,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-// ---- Property ----
+// Property 
 export const propertySchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   address: z.string().trim().min(1, 'Address is required'),
@@ -37,7 +35,7 @@ export const propertySchema = z.object({
   status: z.enum(PROPERTY_STATUS).default('ACTIVE'),
 });
 
-// ---- Maintenance request ----
+// Maintenance request
 export const requestSchema = z.object({
   propertyId: z.string().uuid('A property must be selected'),
   title: z.string().trim().min(1, 'Title is required'),
@@ -56,7 +54,7 @@ export const requestSchema = z.object({
 export const requestUpdateSchema = requestSchema.partial();
 export const propertyUpdateSchema = propertySchema.partial();
 
-// ---- Fund ----
+// Fund
 export const fundSchema = z.object({
   propertyId: z.string().uuid('A property must be selected'),
   totalAmount: z.coerce.number().min(0),
@@ -64,7 +62,7 @@ export const fundSchema = z.object({
 });
 export const fundUpdateSchema = fundSchema.partial();
 
-// ---- Allocation ----
+// Allocation 
 export const allocationSchema = z.object({
   fundId: z.string().uuid(),
   requestId: z.string().uuid(),

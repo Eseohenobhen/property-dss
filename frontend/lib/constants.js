@@ -1,5 +1,4 @@
-// Shared metadata for enums — labels and colours used across the UI.
-
+// Shared constants for the frontend application
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export const CATEGORIES = {

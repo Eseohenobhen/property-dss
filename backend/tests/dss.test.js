@@ -1,8 +1,4 @@
-// Unit tests for the decision-support engine (project objective 5:
-// evaluating the system for accuracy). Run with: npm test
-//
-// Uses Node's built-in test runner (node:test) — no extra dependencies.
-
+// Unit test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -12,7 +8,7 @@ import {
   CRITERIA_WEIGHTS,
 } from '../src/services/dss.js';
 
-// --- Fixtures mirroring the seeded Sunrise Estate scenario ---
+//  Fixtures mirroring the seeded Sunrise Estate scenario
 const roof = {
   id: 'roof', title: 'Leaking roof', category: 'ROOFING',
   urgency: 9, impact: 8, assetImportance: 9, estimatedCost: 450000,
@@ -26,7 +22,7 @@ const paint = {
   urgency: 2, impact: 2, assetImportance: 3, estimatedCost: 180000,
 };
 
-// --- computePriorityScore: exact, hand-checked values ---
+// computePriorityScore: exact, hand-checked values 
 test('weights sum to 1', () => {
   const sum = Object.values(CRITERIA_WEIGHTS).reduce((a, b) => a + b, 0);
   assert.equal(Math.round(sum * 100) / 100, 1);
@@ -64,7 +60,7 @@ test('higher cost lowers the score, all else equal', () => {
   assert.ok(computePriorityScore(pricey) < computePriorityScore(cheap));
 });
 
-// --- rankRequests ---
+// rankRequests
 test('ranks requests by score, highest first', () => {
   const ranked = rankRequests([paint, roof, wall]);
   assert.deepEqual(ranked.map((r) => r.id), ['roof', 'wall', 'paint']);
@@ -77,7 +73,7 @@ test('breaks ties by lower cost', () => {
   assert.deepEqual(ranked.map((r) => r.id), ['b', 'a']); // equal score, cheaper first
 });
 
-// --- recommendAllocation (greedy, budget-aware) ---
+// recommendAllocation (greedy, budget-aware)  
 test('funds top requests within budget and defers what does not fit', () => {
   const { recommendations, summary } = recommendAllocation([roof, wall, paint], 1500000);
 

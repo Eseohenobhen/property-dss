@@ -4,22 +4,6 @@ All diagrams below are written in [Mermaid](https://mermaid.js.org/) and reflect
 system as actually implemented. They render automatically on GitHub, in VS Code (with a
 Mermaid preview extension), or by pasting into <https://mermaid.live>.
 
-Suggested mapping to a final-year report:
-
-| Diagram | Typical report chapter |
-|---|---|
-| 1. System architecture | Ch. 3 — System design |
-| 2. Use case diagram | Ch. 3 — Requirements |
-| 3. ER diagram (database) | Ch. 3/4 — Database design |
-| 4. DFD — context (level 0) | Ch. 3 — System analysis |
-| 5. DFD — level 1 | Ch. 3 — System analysis |
-| 6. DSS algorithm flowchart | Ch. 3 — Decision model |
-| 7. Create-request activity | Ch. 4 — Implementation |
-| 8. Sequence — authentication | Ch. 4 — Implementation |
-| 9. Sequence — fund allocation | Ch. 4 — Implementation |
-| 10. Backend module structure | Ch. 4 — Implementation |
-
----
 
 ## 1. System architecture (three-tier)
 
@@ -168,46 +152,52 @@ graph TD
 ## 5. Data flow diagram — level 1
 
 ```mermaid
-graph TD
+flowchart LR
   Admin([Admin])
   Manager([Manager])
 
-  P1["1.0 Authenticate user"]
-  P2["2.0 Manage properties"]
-  P3["3.0 Manage & score requests"]
-  P4["4.0 Manage funds"]
-  P5["5.0 Recommend & allocate funds (DSS)"]
-  P6["6.0 Generate reports"]
+  subgraph Processes["Processes"]
+    direction TB
+    P1["1.0 Authenticate user"]
+    P2["2.0 Manage properties"]
+    P3["3.0 Manage & score requests"]
+    P4["4.0 Manage funds"]
+    P5["5.0 Recommend & allocate funds (DSS)"]
+    P6["6.0 Generate reports"]
+  end
 
-  DS1[("D1 Users")]
-  DS2[("D2 Properties")]
-  DS3[("D3 Maintenance requests")]
-  DS4[("D4 Maintenance funds")]
-  DS5[("D5 Fund allocations")]
+  subgraph Stores["Data stores"]
+    direction TB
+    DS1[("D1 Users")]
+    DS2[("D2 Properties")]
+    DS3[("D3 Maintenance requests")]
+    DS4[("D4 Maintenance funds")]
+    DS5[("D5 Fund allocations")]
+  end
 
   Admin --> P1
-  Manager --> P1
-  P1 --> DS1
-
-  Admin --> P2 --> DS2
-
-  Admin --> P3 --> DS3
-  P3 -. "reads" .-> DS2
-
-  Admin --> P4 --> DS4
-  P4 -. "reads" .-> DS2
-
+  Admin --> P2
+  Admin --> P3
+  Admin --> P4
   Admin --> P5
-  P5 -. "reads" .-> DS3
-  P5 -. "reads" .-> DS4
+  Admin --> P6
+  Manager --> P1
+  Manager --> P6
+
+  P1 --> DS1
+  P2 --> DS2
+  P3 --> DS3
+  P4 --> DS4
   P5 --> DS5
   P5 --> DS3
 
-  Admin --> P6
-  Manager --> P6
-  P6 -. "reads" .-> DS3
-  P6 -. "reads" .-> DS4
-  P6 -. "reads" .-> DS5
+  P3 -. reads .-> DS2
+  P4 -. reads .-> DS2
+  P5 -. reads .-> DS3
+  P5 -. reads .-> DS4
+  P6 -. reads .-> DS3
+  P6 -. reads .-> DS4
+  P6 -. reads .-> DS5
 ```
 
 ---

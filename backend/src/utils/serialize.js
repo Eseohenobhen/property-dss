@@ -1,6 +1,3 @@
-// Prisma returns Decimal fields as Decimal objects and Dates as Date objects.
-// This helper deep-converts a value into plain JSON-friendly types so the
-// frontend always receives numbers and ISO strings.
 export function serialize(value) {
   if (value === null || value === undefined) return value;
 
