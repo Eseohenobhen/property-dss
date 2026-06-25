@@ -1,0 +1,7 @@
+node_modules
+.env
+dist
+*.log
+
+# Local-only database seed — contains demo credentials, kept off the repo
+prisma/seed.js

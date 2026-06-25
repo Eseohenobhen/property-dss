@@ -1,0 +1,159 @@
+// Prisma schema — Property Maintenance Fund Allocation DSS
+// Datasource: PostgreSQL (Neon or any Postgres instance)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//  Enums
+
+enum Role {
+  ADMIN
+  MANAGER
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  APARTMENT
+  COMMERCIAL
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Category {
+  ROOFING
+  STRUCTURAL
+  ELECTRICAL
+  PLUMBING
+  HVAC
+  FLOORING
+  PAINTING
+  SECURITY
+  LANDSCAPING
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+  REJECTED
+}
+
+//  Models
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(MANAGER)
+  createdAt    DateTime @default(now())
+
+  // Relations (audit trail — who created/requested/allocated)
+  propertiesCreated  Property[]            @relation("PropertyCreatedBy")
+  requestsCreated    MaintenanceRequest[]  @relation("RequestRequestedBy")
+  allocationsMade    FundAllocation[]      @relation("AllocationBy")
+
+  @@map("users")
+}
+
+model Property {
+  id           String         @id @default(uuid())
+  name         String
+  address      String
+  propertyType PropertyType
+  units        Int            @default(1)
+  yearBuilt    Int?
+  totalAreaSqm Decimal?       @db.Decimal(10, 2)
+  description  String?
+  status       PropertyStatus @default(ACTIVE)
+
+  createdById  String?
+  createdBy    User?          @relation("PropertyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  requests MaintenanceRequest[]
+  funds    MaintenanceFund[]
+
+  @@map("properties")
+}
+
+model MaintenanceRequest {
+  id              String        @id @default(uuid())
+  propertyId      String
+  property        Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  title           String
+  description     String?
+  category        Category
+  urgency         Int           // 1 = low … 10 = critical
+  impact          Int           // safety / value impact, 1–10
+  assetImportance Int           // 1–10
+  estimatedCost   Decimal       @db.Decimal(12, 2)
+  status          RequestStatus @default(PENDING)
+  priorityScore   Decimal?      @db.Decimal(6, 2) // computed by the DSS engine
+
+  requestedById   String?
+  requestedBy     User?         @relation("RequestRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  assignedTo      String?
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  allocations FundAllocation[]
+
+  @@index([propertyId])
+  @@index([status])
+  @@map("maintenance_requests")
+}
+
+model MaintenanceFund {
+  id              String   @id @default(uuid())
+  propertyId      String
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  totalAmount     Decimal  @default(0) @db.Decimal(12, 2)
+  allocatedAmount Decimal  @default(0) @db.Decimal(12, 2)
+  periodLabel     String   // e.g. "Q1 2026"
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  allocations FundAllocation[]
+
+  @@index([propertyId])
+  @@map("maintenance_funds")
+}
+
+model FundAllocation {
+  id             String   @id @default(uuid())
+  fundId         String
+  fund           MaintenanceFund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  requestId      String
+  request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  amountAssigned Decimal  @db.Decimal(12, 2)
+  allocationDate DateTime @default(now())
+
+  allocatedById  String?
+  allocatedBy    User?    @relation("AllocationBy", fields: [allocatedById], references: [id], onDelete: SetNull)
+  notes          String?
+
+  @@index([fundId])
+  @@index([requestId])
+  @@map("fund_allocations")
+}
