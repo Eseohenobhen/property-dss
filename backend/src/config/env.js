@@ -5,9 +5,9 @@ dotenv.config();
 function required(name) {
   const value = process.env[name];
   if (!value) {
-    console.error(`\n[config] Missing required environment variable: ${name}`);
-    console.error('         Copy backend/.env.example to backend/.env and fill it in.\n');
-    process.exit(1);
+    console.warn(`\n[config] Missing environment variable: ${name}`);
+    console.warn('         Some API routes may fail until it is configured.\n');
+    return '';
   }
   return value;
 }
