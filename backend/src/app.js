@@ -10,6 +10,7 @@ export function createApp() {
   const apiBasePath = process.env.VERCEL ? '/' : '/api';
 
   app.use(cors({ origin: env.corsOrigin, credentials: true }));
+  app.options('*', cors({ origin: env.corsOrigin, credentials: true }));
   app.use(express.json());
   if (!env.isProd) app.use(morgan('dev'));
 
