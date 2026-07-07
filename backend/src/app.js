@@ -7,6 +7,7 @@ import { notFound, errorHandler } from './middleware/error.js';
 
 export function createApp() {
   const app = express();
+  const apiBasePath = process.env.VERCEL ? '/' : '/api';
 
   app.use(cors({ origin: env.corsOrigin, credentials: true }));
   app.use(express.json());
@@ -15,8 +16,8 @@ export function createApp() {
   // Health check
   app.get('/health', (req, res) => res.json({ status: 'ok', service: 'property-dss-api' }));
 
-  // All API endpoints live under /api
-  app.use('/api', apiRoutes);
+  // Vercel strips the /api function prefix; local dev keeps /api for compatibility.
+  app.use(apiBasePath, apiRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
