@@ -4,3 +4,5 @@ dist
 *.log
 
 prisma/seed.js
+.vercel
+.env*
