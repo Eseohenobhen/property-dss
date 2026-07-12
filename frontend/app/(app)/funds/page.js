@@ -16,6 +16,7 @@ export default function FundsPage() {
   const [selected, setSelected] = useState(null);     // fund id
   const [rec, setRec] = useState(null);               // recommendation payload
   const [recLoading, setRecLoading] = useState(false);
+  const [amounts, setAmounts] = useState({});          // requestId -> editable approval amount
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ propertyId: '', periodLabel: '', totalAmount: '' });
   const [busy, setBusy] = useState(false);
@@ -32,7 +33,13 @@ export default function FundsPage() {
 
   async function loadRecommendation(fundId) {
     setSelected(fundId); setRecLoading(true); setRec(null);
-    try { setRec(await api.get(`/funds/${fundId}/recommendation`)); }
+    try {
+      const data = await api.get(`/funds/${fundId}/recommendation`);
+      setRec(data);
+      const initial = {};
+      data.recommendations?.forEach((r) => { initial[r.requestId] = r.estimatedCost; });
+      setAmounts(initial);
+    }
     catch (e) { toast(e.message, 'error'); }
     finally { setRecLoading(false); }
   }
@@ -61,11 +68,15 @@ export default function FundsPage() {
     } catch (e) { toast(e.message, 'error'); }
   }
 
-  async function allocate(requestId, amount) {
-    if (!confirm(`Allocate ${fmtCurrency(amount)} to this request?`)) return;
+  async function allocate(requestId, amount, suggestedAmount) {
+    if (!amount || amount <= 0) { toast('Enter an amount greater than zero', 'error'); return; }
+    const label = amount !== suggestedAmount
+      ? `Approve and release ${fmtCurrency(amount)} (DSS suggested ${fmtCurrency(suggestedAmount)})?`
+      : `Approve and release ${fmtCurrency(amount)} to this request?`;
+    if (!confirm(label)) return;
     try {
-      await api.post('/allocations', { fundId: selected, requestId, amountAssigned: amount });
-      toast('Fund allocated', 'success');
+      await api.post('/allocations', { fundId: selected, requestId, amountAssigned: amount, suggestedAmount });
+      toast('Request approved and funded', 'success');
       await loadFunds();
       await loadRecommendation(selected);
     } catch (e) { toast(e.message, 'error'); }
@@ -157,7 +168,17 @@ export default function FundsPage() {
                       </div>
                       {r.recommended ? (
                         isAdmin
-                          ? <button className="btn btn-primary btn-sm" onClick={() => allocate(r.requestId, r.estimatedCost)}>Allocate</button>
+                          ? (
+                            <div className="approve-box">
+                              <input
+                                type="number" min="0" step="1000"
+                                className="approve-amount"
+                                value={amounts[r.requestId] ?? r.estimatedCost}
+                                onChange={(e) => setAmounts((a) => ({ ...a, [r.requestId]: Number(e.target.value) }))}
+                              />
+                              <button className="btn btn-primary btn-sm" onClick={() => allocate(r.requestId, Number(amounts[r.requestId] ?? r.estimatedCost), r.estimatedCost)}>Approve</button>
+                            </div>
+                          )
                           : <span className="chip-funded">Recommended</span>
                       ) : (
                         isAdmin

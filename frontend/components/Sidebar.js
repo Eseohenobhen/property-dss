@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { initials } from '@/lib/format';
 import Icon from '@/components/Icon';
 
-const NAV = [
+const ADMIN_NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { href: '/properties', label: 'Properties', icon: 'properties' },
   { href: '/requests', label: 'Maintenance', icon: 'maintenance' },
@@ -14,9 +14,16 @@ const NAV = [
   { href: '/reports', label: 'Reports', icon: 'reports' },
 ];
 
+const MANAGER_NAV = [
+  { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/requests', label: 'Maintenance', icon: 'maintenance' },
+  { href: '/recommendations', label: 'Recommendations', icon: 'clipboard' },
+];
+
 export default function Sidebar({ open, onNavigate }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+  const NAV = isAdmin ? ADMIN_NAV : MANAGER_NAV;
 
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -27,7 +34,7 @@ export default function Sidebar({ open, onNavigate }) {
       <nav className="sidebar-nav">
         <div className="nav-section">Menu</div>
         {NAV.map((item) => {
-          const active = pathname === item.href;
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link key={item.href} href={item.href} className={`nav-link ${active ? 'active' : ''}`} onClick={onNavigate}>
               <span className="ico"><Icon name={item.icon} /></span> {item.label}

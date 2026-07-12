@@ -21,6 +21,32 @@ export const CATEGORY_BOOST = Object.freeze({
 
 export const COST_NORMALISER = 500000;
 
+// Plain-language severity a manager picks in the field, mapped to the same
+// urgency/impact/assetImportance inputs the DSS scores on. Admins still get
+// direct numeric control (for "Edit Decision Ranking"); managers get this.
+export const SEVERITY_SCORES = Object.freeze({
+  LOW:      { urgency: 3,  impact: 3, assetImportance: 4 },
+  MEDIUM:   { urgency: 5,  impact: 5, assetImportance: 5 },
+  HIGH:     { urgency: 8,  impact: 7, assetImportance: 7 },
+  CRITICAL: { urgency: 10, impact: 9, assetImportance: 8 },
+});
+
+// A reported safety hazard (e.g. exposed wiring, structural risk) nudges the
+// urgency/impact inputs up regardless of the chosen severity label.
+const SAFETY_BUMP = 2;
+
+// Derives urgency/impact/assetImportance from a manager-chosen severity
+// (+ optional safety flag). Falls back to MEDIUM if an unknown value slips through.
+export function scoreInputsFromSeverity(severity, safetyHazard) {
+  const base = SEVERITY_SCORES[severity] ?? SEVERITY_SCORES.MEDIUM;
+  if (!safetyHazard) return { ...base };
+  return {
+    urgency: clamp(base.urgency + SAFETY_BUMP, 1, 10),
+    impact: clamp(base.impact + SAFETY_BUMP, 1, 10),
+    assetImportance: base.assetImportance,
+  };
+}
+
 // score = urgency*0.35 + impact*0.30 + assetImportance*0.20 - costScore*0.15 + categoryBoost
 export function computePriorityScore({ urgency, impact, assetImportance, estimatedCost, category }) {
   const u = clamp(Number(urgency), 1, 10);

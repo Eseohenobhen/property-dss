@@ -50,6 +50,13 @@ enum RequestStatus {
   REJECTED
 }
 
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 //  Models
 
 model User {
@@ -63,7 +70,13 @@ model User {
   // Relations (audit trail — who created/requested/allocated)
   propertiesCreated  Property[]            @relation("PropertyCreatedBy")
   requestsCreated    MaintenanceRequest[]  @relation("RequestRequestedBy")
+  requestsReviewed   MaintenanceRequest[]  @relation("RequestReviewedBy")
   allocationsMade    FundAllocation[]      @relation("AllocationBy")
+  adjustmentsMade    FundAdjustment[]      @relation("AdjustmentBy")
+
+  // Manager <-> Property assignment (many-to-many via join table)
+  managedProperties  PropertyAssignment[]  @relation("AssignmentManager")
+  assignmentsMade    PropertyAssignment[]  @relation("AssignmentAssignedBy")
 
   @@map("users")
 }
@@ -85,10 +98,33 @@ model Property {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  requests MaintenanceRequest[]
-  funds    MaintenanceFund[]
+  requests    MaintenanceRequest[]
+  funds       MaintenanceFund[]
+  assignments PropertyAssignment[]
 
   @@map("properties")
+}
+
+// Join table: which manager(s) are assigned to which propert(y/ies).
+// Modelled many-to-many so a manager could one day cover more than one
+// property (or a property have a backup manager) without a schema change,
+// even though the common case demoed here is one manager per property.
+model PropertyAssignment {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  managerId  String
+  manager    User     @relation("AssignmentManager", fields: [managerId], references: [id], onDelete: Cascade)
+
+  assignedById String?
+  assignedBy   User?    @relation("AssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, managerId])
+  @@index([propertyId])
+  @@index([managerId])
+  @@map("property_assignments")
 }
 
 model MaintenanceRequest {
@@ -99,6 +135,8 @@ model MaintenanceRequest {
   title           String
   description     String?
   category        Category
+  severity        Severity?     // manager-facing label; maps server-side to urgency/impact/assetImportance
+  safetyHazard    Boolean       @default(false)
   urgency         Int           // 1 = low … 10 = critical
   impact          Int           // safety / value impact, 1–10
   assetImportance Int           // 1–10
@@ -110,6 +148,11 @@ model MaintenanceRequest {
   requestedBy     User?         @relation("RequestRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
   assignedTo      String?
   notes           String?
+
+  rejectionReason String?
+  reviewedById    String?
+  reviewedBy      User?         @relation("RequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -146,14 +189,40 @@ model FundAllocation {
   requestId      String
   request        MaintenanceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
-  amountAssigned Decimal  @db.Decimal(12, 2)
-  allocationDate DateTime @default(now())
+  amountAssigned  Decimal  @db.Decimal(12, 2)
+  // What the DSS recommended at the moment of approval (usually the request's
+  // estimatedCost). Kept separately so later top-ups can be compared against
+  // the original system suggestion, e.g. "DSS suggested ₦200,000; ₦250,000 released".
+  suggestedAmount Decimal? @db.Decimal(12, 2)
+  allocationDate  DateTime @default(now())
 
   allocatedById  String?
   allocatedBy    User?    @relation("AllocationBy", fields: [allocatedById], references: [id], onDelete: SetNull)
   notes          String?
 
+  adjustments FundAdjustment[]
+
   @@index([fundId])
   @@index([requestId])
   @@map("fund_allocations")
+}
+
+// Audit trail for "Adjust Funds": every time an admin tops up (or reduces)
+// an already-approved allocation after ground-truth costs turn out different
+// from the original estimate.
+model FundAdjustment {
+  id             String         @id @default(uuid())
+  allocationId   String
+  allocation     FundAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+
+  previousAmount Decimal  @db.Decimal(12, 2)
+  newAmount      Decimal  @db.Decimal(12, 2)
+  reason         String
+
+  adjustedById   String?
+  adjustedBy     User?    @relation("AdjustmentBy", fields: [adjustedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([allocationId])
+  @@map("fund_adjustments")
 }

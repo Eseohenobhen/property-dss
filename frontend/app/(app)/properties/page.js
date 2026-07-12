@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
@@ -83,12 +84,19 @@ export default function PropertiesPage() {
                 <div className="stat"><div className="v">{p._count?.requests ?? 0}</div><div className="l">Requests</div></div>
                 <div className="stat"><div className="v">{p._count?.funds ?? 0}</div><div className="l">Funds</div></div>
               </div>
+              <div className="manager-row">
+                <Icon name="userPlus" size={14} />
+                {p.assignments?.length
+                  ? p.assignments.map((a) => a.manager.fullName).join(', ')
+                  : <span className="muted">No manager assigned</span>}
+              </div>
               <div className="prop-foot">
                 <span className={`muted`} style={{ fontSize: '.8rem' }}>
                   <span className={`dot ${p.status}`} />{p.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                 </span>
                 {isAdmin && (
                   <span style={{ display: 'flex', gap: 8 }}>
+                    <Link href={`/properties/${p.id}`} className="btn-icon" title="Manage"><Icon name="arrowRight" size={15} /></Link>
                     <button className="btn-icon" onClick={() => openEdit(p)} title="Edit"><Icon name="edit" size={15} /></button>
                     <button className="btn-icon danger" onClick={() => remove(p)} title="Delete"><Icon name="trash" size={15} /></button>
                   </span>

@@ -5,6 +5,7 @@ import {
   computePriorityScore,
   rankRequests,
   recommendAllocation,
+  scoreInputsFromSeverity,
   CRITERIA_WEIGHTS,
 } from '../src/services/dss.js';
 
@@ -104,4 +105,32 @@ test('assigns ranks 1..n in priority order', () => {
 test('never recommends more than the available budget', () => {
   const { summary } = recommendAllocation([roof, wall, paint], 1500000);
   assert.ok(summary.recommendedTotal <= 1500000);
+});
+
+// scoreInputsFromSeverity — manager-facing severity mapping
+test('LOW severity maps to low urgency/impact/assetImportance', () => {
+  assert.deepEqual(scoreInputsFromSeverity('LOW', false), { urgency: 3, impact: 3, assetImportance: 4 });
+});
+
+test('CRITICAL severity maps to near-max urgency/impact', () => {
+  assert.deepEqual(scoreInputsFromSeverity('CRITICAL', false), { urgency: 10, impact: 9, assetImportance: 8 });
+});
+
+test('a safety hazard bumps urgency/impact but is capped at 10', () => {
+  const withHazard = scoreInputsFromSeverity('HIGH', true);
+  assert.equal(withHazard.urgency, 10); // 8 + 2, capped
+  assert.equal(withHazard.impact, 9);   // 7 + 2
+  assert.equal(withHazard.assetImportance, 7); // unaffected by the hazard flag
+});
+
+test('an unrecognised severity falls back to MEDIUM', () => {
+  assert.deepEqual(scoreInputsFromSeverity('NOT_A_REAL_SEVERITY', false), { urgency: 5, impact: 5, assetImportance: 5 });
+});
+
+test('a HIGH-severity safety hazard outranks a MEDIUM non-hazard, all else equal', () => {
+  const hazardInputs = scoreInputsFromSeverity('HIGH', true);
+  const mediumInputs = scoreInputsFromSeverity('MEDIUM', false);
+  const a = computePriorityScore({ ...hazardInputs, estimatedCost: 300000, category: 'ELECTRICAL' });
+  const b = computePriorityScore({ ...mediumInputs, estimatedCost: 300000, category: 'ELECTRICAL' });
+  assert.ok(a > b);
 });

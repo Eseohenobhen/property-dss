@@ -31,7 +31,7 @@ This repository contains a clean **three-tier architecture**:
 ## How it maps to the project objectives
 
 1. **Analyse the current allocation process** — modelled as: log requests → score by priority → match against a budget → record allocation + audit trail.
-2. **Store & manage property and maintenance data** — five related tables (`users`, `properties`, `maintenance_requests`, `maintenance_funds`, `fund_allocations`) via Prisma/PostgreSQL.
+2. **Store & manage property and maintenance data** — seven related tables (`users`, `properties`, `property_assignments`, `maintenance_requests`, `maintenance_funds`, `fund_allocations`, `fund_adjustments`) via Prisma/PostgreSQL.
 3. **Decision rules for prioritising maintenance** — a weighted multi-criteria score (see below) computed server-side in `backend/src/services/dss.js`.
 4. **Decision support module for optimal allocation** — `recommendAllocation()` walks ranked requests and recommends which to fund within the available budget, with a reason for each.
 5. **Evaluate accuracy/efficiency/usability** — the engine is pure, testable logic with an automated test suite (`cd backend && npm test`); the API is consistent JSON; the UI is responsive and role-aware.
@@ -200,7 +200,7 @@ allocation against hand-checked values — evidence for the "accuracy" evaluatio
 property-dss/
 ├─ backend/
 │  ├─ prisma/
-│  │  ├─ schema.prisma        # data model (5 tables)
+│  │  ├─ schema.prisma        # data model (7 tables)
 │  │  └─ seed.js              # demo data
 │  └─ src/
 │     ├─ services/dss.js      # ⭐ the decision engine

@@ -9,6 +9,13 @@ const PATHS = {
   trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></>,
   menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>,
   close: <><path d="M6 6l12 12M18 6L6 18" /></>,
+  print: <><path d="M6 9V2h12v7" /><rect x="6" y="14" width="12" height="8" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /></>,
+  userPlus: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></>,
+  check: <path d="M20 6L9 17l-5-5" />,
+  x: <><path d="M18 6L6 18" /><path d="M6 6l12 12" /></>,
+  clipboard: <><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3" /><path d="M9 12h6M9 16h6" /></>,
+  arrowRight: <><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>,
+  alert: <><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></>,
 };
 
 export default function Icon({ name, size = 18 }) {

@@ -6,6 +6,25 @@ const CATEGORY_BOOST = {
 };
 const COST_NORMALISER = 500000;
 
+// Mirrors services/dss.js#SEVERITY_SCORES / scoreInputsFromSeverity on the backend.
+const SEVERITY_SCORES = {
+  LOW: { urgency: 3, impact: 3, assetImportance: 4 },
+  MEDIUM: { urgency: 5, impact: 5, assetImportance: 5 },
+  HIGH: { urgency: 8, impact: 7, assetImportance: 7 },
+  CRITICAL: { urgency: 10, impact: 9, assetImportance: 8 },
+};
+const SAFETY_BUMP = 2;
+
+export function scoreInputsFromSeverity(severity, safetyHazard) {
+  const base = SEVERITY_SCORES[severity] ?? SEVERITY_SCORES.MEDIUM;
+  if (!safetyHazard) return { ...base };
+  return {
+    urgency: clamp(base.urgency + SAFETY_BUMP, 1, 10),
+    impact: clamp(base.impact + SAFETY_BUMP, 1, 10),
+    assetImportance: base.assetImportance,
+  };
+}
+
 export function previewScore({ urgency, impact, assetImportance, estimatedCost, category }) {
   const u = clamp(Number(urgency), 1, 10);
   const i = clamp(Number(impact), 1, 10);

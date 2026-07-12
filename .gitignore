@@ -6,3 +6,6 @@ node_modules/
 # Environment
 .env
 .env.local
+changes.md
+claude_code_integration_prompt.md
+property-dss-updated.zip

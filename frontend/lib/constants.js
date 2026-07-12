@@ -40,3 +40,14 @@ export const PROPERTY_TYPE_OPTIONS = Object.entries(PROPERTY_TYPES).map(([value,
   value,
   label: m.label,
 }));
+
+// Plain-language severity a manager picks when logging an issue from site —
+// the server maps this to the DSS's urgency/impact/assetImportance inputs.
+export const SEVERITIES = {
+  LOW: { label: 'Low', color: '#16a34a', hint: 'Cosmetic or can wait a few months' },
+  MEDIUM: { label: 'Medium', color: '#ca8a04', hint: 'Should be addressed this quarter' },
+  HIGH: { label: 'High', color: '#ea580c', hint: 'Needs attention within days' },
+  CRITICAL: { label: 'Critical', color: '#dc2626', hint: 'Urgent — risk to safety or the building' },
+};
+
+export const SEVERITY_OPTIONS = Object.entries(SEVERITIES).map(([value, m]) => ({ value, label: m.label }));

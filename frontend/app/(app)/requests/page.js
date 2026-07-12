@@ -1,29 +1,34 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { fmtCurrency, fmtScore } from '@/lib/format';
-import { CATEGORY_OPTIONS, STATUS_OPTIONS } from '@/lib/constants';
-import { previewScore } from '@/lib/score';
-import { CategoryBadge, StatusBadge } from '@/components/Badges';
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, SEVERITY_OPTIONS, SEVERITIES } from '@/lib/constants';
+import { previewScore, scoreInputsFromSeverity } from '@/lib/score';
+import { CategoryBadge, StatusBadge, SeverityBadge } from '@/components/Badges';
 import Modal from '@/components/Modal';
 import Icon from '@/components/Icon';
 
-const EMPTY = {
+const EMPTY_ADMIN = {
   propertyId: '', title: '', description: '', category: 'ROOFING',
   urgency: 5, impact: 5, assetImportance: 5, estimatedCost: '', status: 'PENDING', assignedTo: '', notes: '',
 };
+const EMPTY_MANAGER = {
+  propertyId: '', title: '', description: '', category: 'ROOFING',
+  severity: 'MEDIUM', safetyHazard: false, estimatedCost: '',
+};
 
 export default function RequestsPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isManager } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState(null);
   const [properties, setProperties] = useState([]);
   const [filters, setFilters] = useState({ search: '', propertyId: '', status: '', category: '' });
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(EMPTY_ADMIN);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -33,6 +38,8 @@ export default function RequestsPage() {
   }
   useEffect(() => {
     load();
+    // For a manager this naturally returns only their assigned propert(y/ies) —
+    // scoping happens server-side, so no extra logic is needed here.
     api.get('/properties').then(setProperties).catch(() => {});
   }, []);
 
@@ -48,7 +55,12 @@ export default function RequestsPage() {
   }, [items, filters]);
 
   function openCreate() {
-    setForm({ ...EMPTY, propertyId: properties[0]?.id || '' }); setErr(''); setModal({ mode: 'create' });
+    if (isAdmin) {
+      setForm({ ...EMPTY_ADMIN, propertyId: properties[0]?.id || '' });
+    } else {
+      setForm({ ...EMPTY_MANAGER, propertyId: properties[0]?.id || '' });
+    }
+    setErr(''); setModal({ mode: 'create' });
   }
   function openEdit(r) {
     setForm({
@@ -61,15 +73,31 @@ export default function RequestsPage() {
 
   async function save(e) {
     e.preventDefault(); setErr(''); setBusy(true);
-    const payload = {
-      ...form,
-      urgency: Number(form.urgency), impact: Number(form.impact), assetImportance: Number(form.assetImportance),
-      estimatedCost: Number(form.estimatedCost),
-    };
     try {
-      if (modal.mode === 'create') await api.post('/requests', payload);
-      else await api.put(`/requests/${modal.id}`, payload);
-      toast(modal.mode === 'create' ? 'Request logged' : 'Request updated', 'success');
+      if (modal.mode === 'create' && isManager) {
+        // Manager field-report path: severity only, backend derives the score inputs.
+        const payload = {
+          propertyId: form.propertyId,
+          title: form.title,
+          description: form.description,
+          category: form.category,
+          severity: form.severity,
+          safetyHazard: form.safetyHazard,
+          estimatedCost: Number(form.estimatedCost),
+        };
+        await api.post('/requests', payload);
+        toast('Issue reported to the admin', 'success');
+      } else {
+        // Admin path: explicit numeric scoring inputs (also used for "Edit Decision Ranking").
+        const payload = {
+          ...form,
+          urgency: Number(form.urgency), impact: Number(form.impact), assetImportance: Number(form.assetImportance),
+          estimatedCost: Number(form.estimatedCost),
+        };
+        if (modal.mode === 'create') await api.post('/requests', payload);
+        else await api.put(`/requests/${modal.id}`, payload);
+        toast(modal.mode === 'create' ? 'Request logged' : 'Request updated', 'success');
+      }
       setModal(null); load();
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
@@ -80,17 +108,33 @@ export default function RequestsPage() {
     catch (e) { toast(e.message, 'error'); }
   }
 
+  async function reject(r) {
+    const reason = prompt(`Reason for rejecting "${r.title}"? (optional, the manager will see this)`);
+    if (reason === null) return; // cancelled
+    try {
+      await api.post(`/requests/${r.id}/reject`, { reason: reason || undefined });
+      toast('Request rejected', 'success'); load();
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const livePreview = previewScore(form);
+  const setChecked = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.checked }));
+
+  const isManagerCreateForm = modal?.mode === 'create' && isManager;
+  const livePreview = isManagerCreateForm
+    ? previewScore({ ...scoreInputsFromSeverity(form.severity, form.safetyHazard), estimatedCost: form.estimatedCost, category: form.category })
+    : previewScore(form);
 
   return (
     <div className="page">
       <div className="filters">
         <input placeholder="Search by title…" value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} />
-        <select value={filters.propertyId} onChange={(e) => setFilters((f) => ({ ...f, propertyId: e.target.value }))}>
-          <option value="">All properties</option>
-          {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        {properties.length > 1 && (
+          <select value={filters.propertyId} onChange={(e) => setFilters((f) => ({ ...f, propertyId: e.target.value }))}>
+            <option value="">All properties</option>
+            {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        )}
         <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
           <option value="">All statuses</option>
           {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -100,7 +144,11 @@ export default function RequestsPage() {
           {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <div className="spacer" />
-        {isAdmin && <button className="btn btn-primary" onClick={openCreate} disabled={properties.length === 0}>+ New Request</button>}
+        {(isAdmin || isManager) && (
+          <button className="btn btn-primary" onClick={openCreate} disabled={properties.length === 0} title={properties.length === 0 && isManager ? 'You are not assigned to a property yet — ask an admin to assign you one.' : undefined}>
+            {isAdmin ? '+ New Request' : '+ Report an Issue'}
+          </button>
+        )}
       </div>
 
       <div className="card">
@@ -114,7 +162,7 @@ export default function RequestsPage() {
               <thead>
                 <tr>
                   <th>Score</th><th>Title</th><th>Property</th><th>Category</th>
-                  <th>Cost</th><th>Status</th>{isAdmin && <th></th>}
+                  <th>Cost</th><th>Status</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -123,17 +171,26 @@ export default function RequestsPage() {
                     <td className="score-cell">{fmtScore(r.priorityScore)}</td>
                     <td><strong>{r.title}</strong></td>
                     <td className="muted">{r.property?.name}</td>
-                    <td><CategoryBadge category={r.category} /></td>
+                    <td>
+                      <CategoryBadge category={r.category} />
+                      {r.severity && <div style={{ marginTop: 4 }}><SeverityBadge severity={r.severity} /></div>}
+                    </td>
                     <td className="cost-cell">{fmtCurrency(r.estimatedCost)}</td>
                     <td><StatusBadge status={r.status} /></td>
-                    {isAdmin && (
-                      <td>
-                        <span style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn-icon" onClick={() => openEdit(r)} title="Edit"><Icon name="edit" size={15} /></button>
-                          <button className="btn-icon danger" onClick={() => remove(r)} title="Delete"><Icon name="trash" size={15} /></button>
-                        </span>
-                      </td>
-                    )}
+                    <td>
+                      <span style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <Link href={`/print/request/${r.id}`} target="_blank" className="btn-icon" title="Print"><Icon name="print" size={15} /></Link>
+                        {isAdmin && (
+                          <>
+                            <button className="btn-icon" onClick={() => openEdit(r)} title="Edit / Re-rank"><Icon name="edit" size={15} /></button>
+                            {r.status === 'PENDING' && (
+                              <button className="btn-icon danger" onClick={() => reject(r)} title="Reject"><Icon name="x" size={15} /></button>
+                            )}
+                            <button className="btn-icon danger" onClick={() => remove(r)} title="Delete"><Icon name="trash" size={15} /></button>
+                          </>
+                        )}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -143,12 +200,15 @@ export default function RequestsPage() {
       </div>
 
       {modal && (
-        <Modal title={modal.mode === 'create' ? 'New Maintenance Request' : 'Edit Request'} onClose={() => setModal(null)} wide>
+        <Modal
+          title={modal.mode === 'create' ? (isManager ? 'Report an Issue' : 'New Maintenance Request') : 'Edit Request / Decision Ranking'}
+          onClose={() => setModal(null)} wide
+        >
           <form onSubmit={save}>
             {err && <div className="form-alert error">{err}</div>}
             <div className="field-row">
               <div className="field"><label>Property</label>
-                <select value={form.propertyId} onChange={set('propertyId')} required>
+                <select value={form.propertyId} onChange={set('propertyId')} required disabled={isManagerCreateForm && properties.length === 1}>
                   <option value="">— Select —</option>
                   {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -159,21 +219,43 @@ export default function RequestsPage() {
                 </select>
               </div>
             </div>
-            <div className="field"><label>Title</label><input value={form.title} onChange={set('title')} required placeholder="e.g. Leaking roof over Flat 3B" /></div>
-            <div className="field"><label>Description</label><textarea value={form.description} onChange={set('description')} placeholder="optional" /></div>
-            <div className="field-row three">
-              <div className="field"><label>Urgency (1–10)</label><input type="number" min="1" max="10" value={form.urgency} onChange={set('urgency')} required /></div>
-              <div className="field"><label>Impact (1–10)</label><input type="number" min="1" max="10" value={form.impact} onChange={set('impact')} required /></div>
-              <div className="field"><label>Asset importance (1–10)</label><input type="number" min="1" max="10" value={form.assetImportance} onChange={set('assetImportance')} required /></div>
-            </div>
-            <div className="field-row">
-              <div className="field"><label>Estimated cost (₦)</label><input type="number" min="0" step="1000" value={form.estimatedCost} onChange={set('estimatedCost')} required placeholder="e.g. 450000" /></div>
-              <div className="field"><label>Status</label>
-                <select value={form.status} onChange={set('status')}>
-                  {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-            </div>
+            <div className="field"><label>Title</label><input value={form.title} onChange={set('title')} required placeholder="e.g. Roof leaking over Flat 3B" /></div>
+            <div className="field"><label>Description</label><textarea value={form.description} onChange={set('description')} placeholder="What did you find on site?" /></div>
+
+            {isManagerCreateForm ? (
+              <>
+                <div className="field-row">
+                  <div className="field"><label>Severity</label>
+                    <select value={form.severity} onChange={set('severity')}>
+                      {SEVERITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <div className="field-hint">{SEVERITIES[form.severity]?.hint}</div>
+                  </div>
+                  <div className="field"><label>Estimated cost (₦)</label><input type="number" min="0" step="1000" value={form.estimatedCost} onChange={set('estimatedCost')} required placeholder="e.g. 200000" /></div>
+                </div>
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={form.safetyHazard} onChange={setChecked('safetyHazard')} />
+                  This is a safety hazard (electrical, structural, fire risk, etc.)
+                </label>
+              </>
+            ) : (
+              <>
+                <div className="field-row three">
+                  <div className="field"><label>Urgency (1–10)</label><input type="number" min="1" max="10" value={form.urgency} onChange={set('urgency')} required /></div>
+                  <div className="field"><label>Impact (1–10)</label><input type="number" min="1" max="10" value={form.impact} onChange={set('impact')} required /></div>
+                  <div className="field"><label>Asset importance (1–10)</label><input type="number" min="1" max="10" value={form.assetImportance} onChange={set('assetImportance')} required /></div>
+                </div>
+                <div className="field-row">
+                  <div className="field"><label>Estimated cost (₦)</label><input type="number" min="0" step="1000" value={form.estimatedCost} onChange={set('estimatedCost')} required placeholder="e.g. 450000" /></div>
+                  <div className="field"><label>Status</label>
+                    <select value={form.status} onChange={set('status')}>
+                      {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="score-preview">
               <span className="l">DSS priority score (live preview)</span>
               <span className="v">{livePreview}</span>

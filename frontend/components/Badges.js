@@ -1,4 +1,4 @@
-import { CATEGORIES, STATUSES } from '@/lib/constants';
+import { CATEGORIES, STATUSES, SEVERITIES } from '@/lib/constants';
 
 export function CategoryBadge({ category }) {
   const c = CATEGORIES[category] || CATEGORIES.OTHER;
@@ -13,6 +13,17 @@ export function CategoryBadge({ category }) {
 export function StatusBadge({ status }) {
   const s = STATUSES[status] || STATUSES.PENDING;
   return <span className="badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>;
+}
+
+export function SeverityBadge({ severity }) {
+  if (!severity) return null;
+  const s = SEVERITIES[severity] || SEVERITIES.MEDIUM;
+  return (
+    <span className="badge" style={{ background: `${s.color}1f`, color: s.color }}>
+      <span className="badge-dot" style={{ background: s.color }} />
+      {s.label}
+    </span>
+  );
 }
 
 export function Rank({ n }) {

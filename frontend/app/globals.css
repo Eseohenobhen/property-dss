@@ -405,6 +405,77 @@ table.tbl tbody tr:hover td { background: var(--surface-2); }
 .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 16px; }
 .detail-grid .dl { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); font-weight: 700; }
 .detail-grid .dv { font-size: .92rem; font-weight: 600; margin-top: 3px; }
+.text-danger { color: var(--danger); }
+
+/* ============================================================ MANAGER ASSIGNMENT */
+.manager-row { display: flex; align-items: center; gap: 6px; padding: 0 20px 14px; font-size: .8rem; color: var(--text-muted); }
+.manager-list { list-style: none; padding: 0; margin: 0; }
+.manager-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
+.manager-list li:last-child { border-bottom: none; }
+.manager-list li span { display: flex; align-items: center; gap: 8px; }
+
+/* ============================================================ FUNDS / ALLOCATIONS (property detail) */
+.fund-block { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.fund-block:last-child { border-bottom: none; }
+.fund-block-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.fund-figures { display: flex; gap: 18px; font-size: .82rem; color: var(--text-muted); flex-wrap: wrap; }
+.fund-figures b { color: var(--text); }
+.adjustment-row td { background: var(--surface-2); font-size: .8rem; color: var(--text-muted); padding: 8px 16px !important; }
+
+/* ============================================================ SEVERITY FORM (manager request form) */
+.field-hint { font-size: .74rem; color: var(--text-dim); margin-top: 5px; }
+.checkbox-field { display: flex; align-items: center; gap: 9px; font-size: .88rem; padding: 10px 0 16px; cursor: pointer; }
+.checkbox-field input { width: 16px; height: 16px; accent-color: var(--danger); }
+
+/* ============================================================ APPROVE-WITH-EDITABLE-AMOUNT (funds page) */
+.approve-box { display: flex; align-items: center; gap: 8px; }
+.approve-amount { width: 120px; padding: 7px 9px; border: 1px solid var(--border-2); border-radius: var(--radius-sm); font-size: .82rem; background: var(--surface); }
+.approve-amount:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+
+/* ============================================================ DASHBOARD BANNERS */
+.banner-info, .banner-warn { padding: 14px 18px; font-size: .88rem; }
+.banner-info { border-left: 4px solid var(--sky); background: var(--sky-tint); }
+.banner-warn { border-left: 4px solid var(--warning); background: var(--warning-tint); }
+.banner-info a, .banner-warn a { color: var(--primary-dark); font-weight: 700; text-decoration: underline; }
+
+/* ============================================================ RECOMMENDATIONS (manager) */
+.rec-cards { display: flex; flex-direction: column; gap: 14px; }
+.rec-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.rec-card-title { font-weight: 700; font-size: 1rem; }
+.rec-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: .78rem; flex-wrap: wrap; }
+.rec-card-desc { font-size: .86rem; color: var(--text-muted); margin: 10px 0 0; }
+
+/* ============================================================ PRINT PAGES (on-screen appearance before printing) */
+.print-shell { min-height: 100vh; background: var(--surface-2); padding: 28px 16px; }
+.print-page { max-width: 860px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px 48px; }
+.print-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.print-brand { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 800; color: var(--primary-dark); }
+.print-title { font-size: 1.5rem; font-weight: 800; margin-top: 4px; }
+.print-subtitle { font-size: .95rem; color: var(--text-muted); margin-top: 2px; }
+.print-meta { font-size: .76rem; color: var(--text-dim); margin-top: 10px; }
+.print-header hr { border: none; border-top: 1px solid var(--border); margin: 16px 0 0; }
+.print-section { margin-top: 26px; }
+.print-section h4 { font-size: .76rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text-dim); font-weight: 800; margin: 0 0 12px; }
+.print-section p { font-size: .9rem; line-height: 1.5; margin: 0; }
+.print-section ul { margin: 0; padding-left: 18px; font-size: .9rem; }
+.print-kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 14px; }
+.print-kv-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.print-kv-grid .l { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dim); font-weight: 700; }
+.print-kv-grid .v { font-size: .92rem; font-weight: 600; }
+.print-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: 6px; }
+.print-table th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border-2); font-size: .68rem; text-transform: uppercase; color: var(--text-dim); }
+.print-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.signoff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 40px; margin-top: 6px; }
+.signoff-grid > div { display: flex; flex-direction: column; gap: 22px; }
+.signoff-grid .l { font-size: .76rem; color: var(--text-muted); }
+.signoff-grid .line { border-bottom: 1px solid var(--text-dim); display: block; height: 1px; }
+
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .print-shell { background: #fff; padding: 0; }
+  .print-page { max-width: none; border: none; border-radius: 0; padding: 0; box-shadow: none; }
+}
 
 /* ============================================================ RESPONSIVE */
 @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
@@ -416,4 +487,6 @@ table.tbl tbody tr:hover td { background: var(--surface-2); }
   .page { padding: 18px 16px 40px; }
   .topbar { padding: 0 16px; }
   .field-row, .field-row.three { grid-template-columns: 1fr; }
+  .print-page { padding: 28px 20px; }
+  .signoff-grid { grid-template-columns: 1fr; }
 }

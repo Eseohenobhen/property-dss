@@ -12,6 +12,7 @@ const PAGE_META = {
   '/requests': { title: 'Maintenance Requests', sub: 'Logged issues, ranked by the decision engine' },
   '/funds': { title: 'Funds & Allocation', sub: 'Budgets and DSS-recommended fund allocation' },
   '/reports': { title: 'Reports', sub: 'Analytics and the fund allocation audit trail' },
+  '/recommendations': { title: 'Recommendations', sub: 'Decisions on the issues you\'ve logged' },
 };
 
 export default function AppLayout({ children }) {
@@ -28,7 +29,10 @@ export default function AppLayout({ children }) {
     return <div className="center-screen"><div className="loading"><div className="spinner" />Loading…</div></div>;
   }
 
-  const meta = PAGE_META[pathname] || { title: 'PropertyDSS', sub: '' };
+  const meta = PAGE_META[pathname]
+    || PAGE_META[Object.keys(PAGE_META).find((k) => k !== '/' && pathname.startsWith(k + '/'))]
+    || (pathname.startsWith('/properties/') ? { title: 'Property Detail', sub: 'Managers, funds and maintenance history' } : null)
+    || { title: 'PropertyDSS', sub: '' };
 
   return (
     <div className="app-shell">

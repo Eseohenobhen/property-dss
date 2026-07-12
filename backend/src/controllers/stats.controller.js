@@ -2,9 +2,16 @@ import { prisma } from '../lib/prisma.js';
 import { asyncHandler } from '../middleware/error.js';
 import { ok } from '../utils/serialize.js';
 import { rankRequests } from '../services/dss.js';
+import { getManagedPropertyIds } from '../services/access.js';
 
 // GET /api/stats/dashboard
 export const dashboardStats = asyncHandler(async (req, res) => {
+  // null => admin, unrestricted. Otherwise the manager's assigned property ids.
+  const scope = req.user.role === 'MANAGER' ? await getManagedPropertyIds(req.user.id) : null;
+  const propertyWhere = scope ? { id: { in: scope } } : {};
+  const byProperty = scope ? { propertyId: { in: scope } } : {};
+  const byFundProperty = scope ? { fund: { propertyId: { in: scope } } } : {};
+
   const [
     totalProperties,
     activeProperties,
@@ -15,17 +22,18 @@ export const dashboardStats = asyncHandler(async (req, res) => {
     categoryGroups,
     recentAllocations,
   ] = await Promise.all([
-    prisma.property.count(),
-    prisma.property.count({ where: { status: 'ACTIVE' } }),
-    prisma.maintenanceRequest.count(),
-    prisma.maintenanceRequest.count({ where: { status: 'PENDING' } }),
-    prisma.maintenanceFund.findMany({ select: { totalAmount: true, allocatedAmount: true } }),
+    prisma.property.count({ where: propertyWhere }),
+    prisma.property.count({ where: { ...propertyWhere, status: 'ACTIVE' } }),
+    prisma.maintenanceRequest.count({ where: byProperty }),
+    prisma.maintenanceRequest.count({ where: { ...byProperty, status: 'PENDING' } }),
+    prisma.maintenanceFund.findMany({ where: byProperty, select: { totalAmount: true, allocatedAmount: true } }),
     prisma.maintenanceRequest.findMany({
-      where: { status: { in: ['PENDING', 'APPROVED'] } },
+      where: { ...byProperty, status: { in: ['PENDING', 'APPROVED'] } },
       include: { property: { select: { name: true } } },
     }),
-    prisma.maintenanceRequest.groupBy({ by: ['category'], _count: { _all: true } }),
+    prisma.maintenanceRequest.groupBy({ by: ['category'], where: byProperty, _count: { _all: true } }),
     prisma.fundAllocation.findMany({
+      where: byFundProperty,
       orderBy: { allocationDate: 'desc' },
       take: 5,
       include: {
@@ -70,14 +78,20 @@ export const dashboardStats = asyncHandler(async (req, res) => {
 
 // GET /api/stats/reports
 export const reportStats = asyncHandler(async (req, res) => {
+  const scope = req.user.role === 'MANAGER' ? await getManagedPropertyIds(req.user.id) : null;
+  const byProperty = scope ? { propertyId: { in: scope } } : {};
+  const byFundProperty = scope ? { fund: { propertyId: { in: scope } } } : {};
+
   const [categoryGroups, statusGroups, allocations, deferred, funds] = await Promise.all([
     prisma.maintenanceRequest.groupBy({
       by: ['category'],
+      where: byProperty,
       _count: { _all: true },
       _sum: { estimatedCost: true },
     }),
-    prisma.maintenanceRequest.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.maintenanceRequest.groupBy({ by: ['status'], where: byProperty, _count: { _all: true } }),
     prisma.fundAllocation.findMany({
+      where: byFundProperty,
       orderBy: { allocationDate: 'desc' },
       include: {
         request: { select: { title: true, category: true } },
@@ -86,11 +100,11 @@ export const reportStats = asyncHandler(async (req, res) => {
       },
     }),
     prisma.maintenanceRequest.findMany({
-      where: { status: 'DEFERRED' },
+      where: { ...byProperty, status: 'DEFERRED' },
       include: { property: { select: { name: true } } },
       orderBy: { priorityScore: 'desc' },
     }),
-    prisma.maintenanceFund.findMany({ include: { property: { select: { name: true } } } }),
+    prisma.maintenanceFund.findMany({ where: byProperty, include: { property: { select: { name: true } } } }),
   ]);
 
   const categoryBreakdown = categoryGroups

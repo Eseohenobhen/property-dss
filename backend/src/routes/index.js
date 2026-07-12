@@ -6,6 +6,7 @@ import requestRoutes from './requests.routes.js';
 import fundRoutes from './funds.routes.js';
 import allocationRoutes from './allocations.routes.js';
 import statsRoutes from './stats.routes.js';
+import userRoutes from './users.routes.js';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/requests', requestRoutes);
 router.use('/funds', fundRoutes);
 router.use('/allocations', allocationRoutes);
 router.use('/stats', statsRoutes);
+router.use('/users', userRoutes);
 
 export default router;

@@ -14,9 +14,11 @@ async function main() {
   console.log('Seeding database…');
 
   // Clear existing data (safe for a demo DB)
+  await prisma.fundAdjustment.deleteMany();
   await prisma.fundAllocation.deleteMany();
   await prisma.maintenanceFund.deleteMany();
   await prisma.maintenanceRequest.deleteMany();
+  await prisma.propertyAssignment.deleteMany();
   await prisma.property.deleteMany();
   await prisma.user.deleteMany();
 
@@ -27,7 +29,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: { fullName: 'System Admin', email: ADMIN_EMAIL, passwordHash: adminPw, role: 'ADMIN' },
   });
-  await prisma.user.create({
+  const manager = await prisma.user.create({
     data: { fullName: 'Demo Manager', email: MANAGER_EMAIL, passwordHash: managerPw, role: 'MANAGER' },
   });
 
@@ -72,9 +74,9 @@ async function main() {
     },
   });
 
-  // Maintenance requests
+  // Maintenance requests (admin-logged; the manager-submitted field reports
+  // for Sunrise Estate are added separately further down)
   const requestSeeds = [
-    { property: sunrise, title: 'Leaking roof over Flat 3B', category: 'ROOFING', urgency: 9, impact: 8, assetImportance: 9, estimatedCost: 450000, status: 'PENDING', description: 'Water ingress damaging ceiling during rains.' },
     { property: sunrise, title: 'Cracked load-bearing wall, stairwell', category: 'STRUCTURAL', urgency: 8, impact: 9, assetImportance: 10, estimatedCost: 1200000, status: 'PENDING', description: 'Visible diagonal crack; needs engineer assessment.' },
     { property: sunrise, title: 'Repaint common corridor', category: 'PAINTING', urgency: 2, impact: 2, assetImportance: 3, estimatedCost: 180000, status: 'PENDING', description: 'Cosmetic — scuffed walls.' },
     { property: lekki, title: 'Faulty main distribution board', category: 'ELECTRICAL', urgency: 9, impact: 8, assetImportance: 8, estimatedCost: 600000, status: 'PENDING', description: 'Intermittent power trips affecting 6 units.' },
@@ -108,7 +110,7 @@ async function main() {
   }
 
   // Funds
-  await prisma.maintenanceFund.create({
+  const sunriseFund = await prisma.maintenanceFund.create({
     data: { propertyId: sunrise.id, totalAmount: 1500000, allocatedAmount: 0, periodLabel: 'Q1 2026' },
   });
   await prisma.maintenanceFund.create({
@@ -116,6 +118,102 @@ async function main() {
   });
   await prisma.maintenanceFund.create({
     data: { propertyId: plaza.id, totalAmount: 2000000, allocatedAmount: 0, periodLabel: 'Q1 2026' },
+  });
+
+  // Assign the demo manager to Sunrise Estate Block A — "I'm managing this property."
+  await prisma.propertyAssignment.create({
+    data: { propertyId: sunrise.id, managerId: manager.id, assignedById: admin.id },
+  });
+
+  // Manager-submitted field reports (severity-based, the way a manager actually
+  // logs an issue from site — this walks through the full VN scenario end to end:
+  // roofing / plumbing / electrical all logged on one visit, roofing prioritised
+  // and approved first, then topped up once the real cost came in higher.
+  const managerRequestSeeds = [
+    {
+      title: 'Roof leaking over Flat 3B',
+      category: 'ROOFING', severity: 'HIGH', safetyHazard: false,
+      urgency: 8, impact: 7, assetImportance: 7,
+      estimatedCost: 200000, description: 'Water ingress damaging ceiling during rains — needs urgent patching.',
+    },
+    {
+      title: 'Slow-draining sink, Flat 3B bathroom',
+      category: 'PLUMBING', severity: 'MEDIUM', safetyHazard: false,
+      urgency: 5, impact: 5, assetImportance: 5,
+      estimatedCost: 65000, description: 'Noticed while inspecting the roof leak — likely a blocked trap.',
+    },
+    {
+      title: 'Exposed wiring near Flat 3B ceiling',
+      category: 'ELECTRICAL', severity: 'HIGH', safetyHazard: true,
+      urgency: 10, impact: 9, assetImportance: 7,
+      estimatedCost: 95000, description: 'Water ingress has exposed live wiring — shock/fire risk, flagged as a safety hazard.',
+    },
+  ];
+
+  const [roofRequest] = await Promise.all(
+    managerRequestSeeds.map((r) => {
+      const priorityScore = computePriorityScore({
+        urgency: r.urgency, impact: r.impact, assetImportance: r.assetImportance,
+        estimatedCost: r.estimatedCost, category: r.category,
+      });
+      return prisma.maintenanceRequest.create({
+        data: {
+          propertyId: sunrise.id,
+          title: r.title,
+          description: r.description,
+          category: r.category,
+          severity: r.severity,
+          safetyHazard: r.safetyHazard,
+          urgency: r.urgency,
+          impact: r.impact,
+          assetImportance: r.assetImportance,
+          estimatedCost: r.estimatedCost,
+          status: 'PENDING',
+          priorityScore,
+          requestedById: manager.id,
+        },
+      });
+    }),
+  );
+
+  // Admin approves the roofing request first (highest-ranked), releasing the
+  // ₦200,000 the DSS suggested — then, once the contractor gets in and finds
+  // more damage than expected, tops it up to ₦250,000 with a reason on record.
+  const roofAllocation = await prisma.fundAllocation.create({
+    data: {
+      fundId: sunriseFund.id,
+      requestId: roofRequest.id,
+      amountAssigned: 200000,
+      suggestedAmount: 200000,
+      allocatedById: admin.id,
+      notes: 'Approved as the top-priority item from this visit\'s reports.',
+    },
+  });
+  await prisma.maintenanceFund.update({
+    where: { id: sunriseFund.id },
+    data: { allocatedAmount: { increment: 200000 } },
+  });
+  await prisma.maintenanceRequest.update({
+    where: { id: roofRequest.id },
+    data: { status: 'APPROVED', reviewedById: admin.id, reviewedAt: new Date() },
+  });
+
+  await prisma.fundAdjustment.create({
+    data: {
+      allocationId: roofAllocation.id,
+      previousAmount: 200000,
+      newAmount: 250000,
+      reason: 'Contractor found additional rot in the roof timbers once opened up; releasing an extra ₦50,000 to complete the repair.',
+      adjustedById: admin.id,
+    },
+  });
+  await prisma.fundAllocation.update({
+    where: { id: roofAllocation.id },
+    data: { amountAssigned: 250000 },
+  });
+  await prisma.maintenanceFund.update({
+    where: { id: sunriseFund.id },
+    data: { allocatedAmount: { increment: 50000 } },
   });
 
   console.log('Seed complete.');

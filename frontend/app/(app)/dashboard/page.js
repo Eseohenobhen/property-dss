@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { fmtCurrency, fmtScore } from '@/lib/format';
 import { CATEGORIES } from '@/lib/constants';
 import { CategoryBadge, Rank } from '@/components/Badges';
 import BarChart from '@/components/BarChart';
 
 export default function DashboardPage() {
+  const { isManager } = useAuth();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
 
@@ -28,9 +31,20 @@ export default function DashboardPage() {
 
   return (
     <div className="page">
+      {isManager && counts.totalProperties === 0 && (
+        <div className="card banner-warn" style={{ marginBottom: 16 }}>
+          You're not assigned to a property yet — ask your admin to assign you one before you can log maintenance requests.
+        </div>
+      )}
+      {isManager && counts.totalProperties > 0 && (
+        <div className="card banner-info" style={{ marginBottom: 16 }}>
+          Found something on site? <Link href="/requests">Report an issue</Link> and the decision engine will rank it for the admin.
+        </div>
+      )}
+
       <div className="grid kpi-grid">
         <div className="kpi accent-green">
-          <div className="kpi-label">Properties</div>
+          <div className="kpi-label">{isManager ? 'My Properties' : 'Properties'}</div>
           <div className="kpi-value">{counts.totalProperties}</div>
           <div className="kpi-sub">{counts.activeProperties} active</div>
         </div>

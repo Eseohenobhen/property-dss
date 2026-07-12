@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { fmtCurrency, fmtDateTime } from '@/lib/format';
 import { CATEGORIES, STATUSES } from '@/lib/constants';
 import { CategoryBadge, StatusBadge } from '@/components/Badges';
 import BarChart from '@/components/BarChart';
+import Icon from '@/components/Icon';
 
 export default function ReportsPage() {
+  const { isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -31,6 +35,14 @@ export default function ReportsPage() {
 
   return (
     <div className="page">
+      {isAdmin && (
+        <div className="filters" style={{ justifyContent: 'flex-end' }}>
+          <Link href="/print/general" target="_blank" className="btn btn-secondary">
+            <Icon name="print" size={15} /> Print General Report
+          </Link>
+        </div>
+      )}
+
       <div className="two-col">
         <div className="card">
           <div className="section-head"><h3>Requests by Category</h3></div>
