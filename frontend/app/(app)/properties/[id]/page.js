@@ -165,7 +165,8 @@ export default function PropertyDetailPage() {
               </div>
 
               {fund.allocations?.length ? (
-                <table className="tbl" style={{ marginTop: 10 }}>
+                <div className="table-wrap" style={{ marginTop: 10 }}>
+                <table className="tbl">
                   <thead>
                     <tr><th>Request</th><th>Released</th><th>DSS suggested</th><th>Approved by</th><th>Date</th><th /></tr>
                   </thead>
@@ -191,6 +192,7 @@ export default function PropertyDetailPage() {
                     )))}
                   </tbody>
                 </table>
+                </div>
               ) : (
                 <div className="muted" style={{ marginTop: 10, fontSize: '.85rem' }}>No funds released yet from this budget.</div>
               )}
@@ -204,6 +206,7 @@ export default function PropertyDetailPage() {
         {!property.requests?.length ? (
           <div className="empty">No maintenance requests logged for this property yet.</div>
         ) : (
+          <div className="table-wrap">
           <table className="tbl">
             <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Score</th><th>Est. cost</th><th /></tr></thead>
             <tbody>
@@ -223,6 +226,7 @@ export default function PropertyDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

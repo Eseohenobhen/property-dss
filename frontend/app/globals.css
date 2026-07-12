@@ -479,14 +479,45 @@ table.tbl tbody tr:hover td { background: var(--surface-2); }
 
 /* ============================================================ RESPONSIVE */
 @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+
 @media (max-width: 860px) {
   .sidebar { transform: translateX(-100%); box-shadow: var(--shadow-lg); }
   .sidebar.open { transform: translateX(0); }
   .main { margin-left: 0; }
   .menu-btn { display: inline-flex; }
-  .page { padding: 18px 16px 40px; }
-  .topbar { padding: 0 16px; }
+  .page { padding: 18px 14px 40px; }
+  .topbar { padding: 0 14px; }
   .field-row, .field-row.three { grid-template-columns: 1fr; }
   .print-page { padding: 28px 20px; }
   .signoff-grid { grid-template-columns: 1fr; }
+
+  /* Tables: keep the columns intact and let the container scroll sideways
+     instead of squeezing every cell (which wraps text and looks broken). */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.tbl { white-space: nowrap; }
+  table.tbl th, table.tbl td { padding: 11px 13px; }
+}
+
+@media (max-width: 640px) {
+  html { font-size: 14.5px; }
+
+  /* Filter / action toolbars stack full-width so nothing gets cut off and
+     every control is easy to tap on a phone. */
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters input, .filters select { width: 100%; min-width: 0; }
+  .filters .spacer { display: none; }
+  .filters .btn { width: 100%; }
+
+  /* Funds recommendation rows: drop the approve control onto its own line
+     rather than crushing the request title next to it. */
+  .rec-row { flex-wrap: wrap; }
+  .rec-main { flex: 1 1 60%; }
+  .approve-box { flex: 1 1 100%; justify-content: flex-end; margin-top: 4px; }
+  .approve-amount { flex: 1; }
+
+  /* Slightly tighter cards + fuller-screen modals on small phones. */
+  .kpi .kpi-value { font-size: 1.6rem; }
+  .prop-body { gap: 16px; }
+  .overlay { padding: 12px; }
+  .modal-foot .btn { flex: 1; }
 }
