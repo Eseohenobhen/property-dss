@@ -10,7 +10,7 @@ Mermaid preview extension), or by pasting into <https://mermaid.live>.
 ```mermaid
 graph TB
   subgraph Client["Presentation Tier — Next.js (React)"]
-    UI["Pages: Login, Dashboard, Properties,<br/>Requests, Funds, Reports"]
+    UI["Pages: Login, Dashboard, Properties,<br/>Requests, Funds, Recommendations, Reports"]
     APIClient["API client + Auth context<br/>(JWT stored in localStorage)"]
     UI --> APIClient
   end
@@ -19,15 +19,17 @@ graph TB
     MW["Middleware:<br/>CORS, JWT auth, role guard, validation"]
     RT["Routes"]
     CTRL["Controllers"]
+    ACCESS["Access service<br/>(manager → assigned-property scoping)"]
     DSS["DSS Engine<br/>computePriorityScore / recommendAllocation"]
     ORM["Prisma ORM"]
     MW --> RT --> CTRL
+    CTRL --> ACCESS
     CTRL --> DSS
     CTRL --> ORM
   end
 
   subgraph Data["Data Tier — PostgreSQL"]
-    DB[("users, properties,<br/>maintenance_requests,<br/>maintenance_funds,<br/>fund_allocations")]
+    DB[("users, properties, property_assignments,<br/>maintenance_requests,<br/>maintenance_funds, fund_allocations,<br/>fund_adjustments")]
   end
 
   APIClient -- "HTTPS / JSON<br/>(Bearer token)" --> MW
@@ -38,7 +40,9 @@ graph TB
 
 ## 2. Use case diagram
 
-The Manager is view-only; the Admin can manage data and allocate funds.
+The Manager is scoped to their **assigned properties** and can log maintenance
+requests there; the Admin is unrestricted, assigns managers to properties, and
+is the only role that can allocate, adjust or reject.
 
 ```mermaid
 graph LR
@@ -49,22 +53,31 @@ graph LR
     UC1(["Register / Login"])
     UC2(["View dashboard & reports"])
     UC3(["Manage properties"])
-    UC4(["Manage maintenance requests"])
+    UC3b(["Assign / unassign managers<br/>to a property"])
+    UC4(["Log a maintenance request"])
+    UC4b(["Edit / delete a request"])
+    UC4c(["Reject a request<br/>(with reason)"])
     UC5(["Manage funds / budgets"])
     UC6(["View DSS recommendation"])
-    UC7(["Allocate funds to requests"])
+    UC7(["Allocate funds to a request"])
+    UC7b(["Adjust a released allocation<br/>(with reason)"])
   end
 
   Admin --- UC1
   Admin --- UC2
   Admin --- UC3
+  Admin --- UC3b
   Admin --- UC4
+  Admin --- UC4b
+  Admin --- UC4c
   Admin --- UC5
   Admin --- UC6
   Admin --- UC7
+  Admin --- UC7b
 
   Manager --- UC1
   Manager --- UC2
+  Manager --- UC4
   Manager --- UC6
 ```
 
@@ -76,11 +89,17 @@ graph LR
 erDiagram
   USER ||--o{ PROPERTY : "creates"
   USER ||--o{ MAINTENANCE_REQUEST : "requests"
+  USER ||--o{ MAINTENANCE_REQUEST : "reviews"
   USER ||--o{ FUND_ALLOCATION : "allocates"
+  USER ||--o{ FUND_ADJUSTMENT : "adjusts"
+  USER ||--o{ PROPERTY_ASSIGNMENT : "is assigned as manager"
+  USER ||--o{ PROPERTY_ASSIGNMENT : "assigns (admin)"
   PROPERTY ||--o{ MAINTENANCE_REQUEST : "has"
   PROPERTY ||--o{ MAINTENANCE_FUND : "has"
+  PROPERTY ||--o{ PROPERTY_ASSIGNMENT : "has"
   MAINTENANCE_FUND ||--o{ FUND_ALLOCATION : "funds"
   MAINTENANCE_REQUEST ||--o{ FUND_ALLOCATION : "is funded by"
+  FUND_ALLOCATION ||--o{ FUND_ADJUSTMENT : "is adjusted by"
 
   USER {
     uuid id PK
@@ -101,11 +120,20 @@ erDiagram
     enum status
     uuid createdById FK
   }
+  PROPERTY_ASSIGNMENT {
+    uuid id PK
+    uuid propertyId FK
+    uuid managerId FK "must be a MANAGER"
+    uuid assignedById FK
+    datetime createdAt
+  }
   MAINTENANCE_REQUEST {
     uuid id PK
     uuid propertyId FK
     string title
     enum category
+    enum severity "LOW..CRITICAL, manager-facing"
+    boolean safetyHazard
     int urgency
     int impact
     int assetImportance
@@ -113,6 +141,9 @@ erDiagram
     enum status
     decimal priorityScore
     uuid requestedById FK
+    string rejectionReason
+    uuid reviewedById FK
+    datetime reviewedAt
   }
   MAINTENANCE_FUND {
     uuid id PK
@@ -126,8 +157,18 @@ erDiagram
     uuid fundId FK
     uuid requestId FK
     decimal amountAssigned
+    decimal suggestedAmount "DSS suggestion at approval time"
     datetime allocationDate
     uuid allocatedById FK
+  }
+  FUND_ADJUSTMENT {
+    uuid id PK
+    uuid allocationId FK
+    decimal previousAmount
+    decimal newAmount
+    string reason
+    uuid adjustedById FK
+    datetime createdAt
   }
 ```
 
@@ -141,10 +182,10 @@ graph TD
   Manager([Manager])
   P(("PropertyDSS<br/>System"))
 
-  Admin -- "property, request & fund data;<br/>allocation decisions" --> P
+  Admin -- "property, request & fund data;<br/>manager assignments;<br/>allocation, adjustment & review decisions" --> P
   P -- "dashboards, rankings,<br/>recommendations, reports" --> Admin
-  Manager -- "login; view requests" --> P
-  P -- "read-only dashboards & reports" --> Manager
+  Manager -- "login; log requests for<br/>assigned properties" --> P
+  P -- "scoped dashboards, request status<br/>& reports (assigned properties only)" --> Manager
 ```
 
 ---
@@ -160,10 +201,11 @@ flowchart LR
     direction TB
     P1["1.0 Authenticate user"]
     P2["2.0 Manage properties"]
-    P3["3.0 Manage & score requests"]
+    P3["3.0 Log, score & review requests"]
     P4["4.0 Manage funds"]
-    P5["5.0 Recommend & allocate funds (DSS)"]
+    P5["5.0 Recommend, allocate &<br/>adjust funds (DSS)"]
     P6["6.0 Generate reports"]
+    P7["7.0 Assign managers<br/>to properties"]
   end
 
   subgraph Stores["Data stores"]
@@ -173,6 +215,8 @@ flowchart LR
     DS3[("D3 Maintenance requests")]
     DS4[("D4 Maintenance funds")]
     DS5[("D5 Fund allocations")]
+    DS6[("D6 Property assignments")]
+    DS7[("D7 Fund adjustments")]
   end
 
   Admin --> P1
@@ -181,7 +225,9 @@ flowchart LR
   Admin --> P4
   Admin --> P5
   Admin --> P6
+  Admin --> P7
   Manager --> P1
+  Manager --> P3
   Manager --> P6
 
   P1 --> DS1
@@ -190,14 +236,19 @@ flowchart LR
   P4 --> DS4
   P5 --> DS5
   P5 --> DS3
+  P5 --> DS7
+  P7 --> DS6
 
+  P2 -. reads .-> DS6
   P3 -. reads .-> DS2
+  P3 -. reads .-> DS6
   P4 -. reads .-> DS2
   P5 -. reads .-> DS3
   P5 -. reads .-> DS4
   P6 -. reads .-> DS3
   P6 -. reads .-> DS4
   P6 -. reads .-> DS5
+  P6 -. reads .-> DS7
 ```
 
 ---
@@ -224,18 +275,30 @@ flowchart TD
 
 ## 7. Activity — logging a maintenance request (server-side scoring)
 
+Both roles can log a request: an Admin sets the scoring inputs directly, while
+a Manager (restricted to their assigned properties) picks a plain-language
+severity + safety-hazard flag that the server converts into the same inputs.
+
 ```mermaid
 flowchart TD
-  A([Admin opens 'New Request']) --> B["Fill form: property, category,<br/>urgency, impact, asset importance, cost"]
-  B --> C["UI shows live score preview"]
-  C --> D["Submit: POST /requests"]
-  D --> E{"JWT valid & role = ADMIN?"}
-  E -- "No" --> X(["401 / 403 error"])
-  E -- "Yes" --> F{"Validation passes?"}
-  F -- "No" --> Y(["422 validation error"])
-  F -- "Yes" --> G["DSS engine computes priorityScore"]
-  G --> H["Save request with score (Prisma)"]
-  H --> I(["Saved request returned; list refreshes, ranked"])
+  A([User opens 'New Request' /<br/>'Report an Issue']) --> B{"Role?"}
+  B -- "Admin" --> C1["Fill form: any property, category,<br/>urgency, impact, asset importance, cost"]
+  B -- "Manager" --> C2["Fill form: assigned property, category,<br/>severity, safety hazard flag, cost"]
+  C1 --> D["Submit: POST /requests"]
+  C2 --> D
+  D --> E{"JWT valid?"}
+  E -- "No" --> X(["401 error"])
+  E -- "Yes" --> F{"Manager & property<br/>outside assigned scope?"}
+  F -- "Yes" --> X2(["403 Forbidden"])
+  F -- "No" --> G{"Validation passes?"}
+  G -- "No" --> Y(["422 validation error"])
+  G -- "Yes" --> H{"Scoring inputs given<br/>directly?"}
+  H -- "No (severity path)" --> I["Derive urgency/impact/assetImportance<br/>from severity + safety hazard"]
+  H -- "Yes (admin path)" --> J["Use the supplied<br/>urgency/impact/assetImportance"]
+  I --> K["DSS engine computes priorityScore"]
+  J --> K
+  K --> L["Save request, status = PENDING (Prisma)"]
+  L --> M(["Saved request returned; list refreshes, ranked"])
 ```
 
 ---
@@ -267,7 +330,7 @@ sequenceDiagram
 
 ---
 
-## 9. Sequence — DSS recommendation and fund allocation
+## 9. Sequence — DSS recommendation, fund allocation, rejection & adjustment
 
 ```mermaid
 sequenceDiagram
@@ -279,7 +342,7 @@ sequenceDiagram
 
   Admin->>FE: Select a fund
   FE->>API: GET /funds/:id/recommendation (Bearer token)
-  API->>API: authenticate (verify JWT)
+  API->>API: authenticate + verify property is<br/>in caller's scope (access.js)
   API->>DB: fetch fund + outstanding requests
   DB-->>API: fund, requests
   API->>DSS: recommendAllocation(requests, available)
@@ -287,13 +350,33 @@ sequenceDiagram
   API-->>FE: 200 JSON
   FE-->>Admin: show recommendation
 
-  Admin->>FE: Click "Allocate" on a request
-  FE->>API: POST /allocations (fundId, requestId, amount)
-  API->>API: authenticate + requireRole(ADMIN)
-  API->>DB: transaction — insert allocation,<br/>fund.allocatedAmount += amount,<br/>request.status = APPROVED
-  DB-->>API: committed
-  API-->>FE: 201 Created
-  FE-->>Admin: toast "Fund allocated", balances update
+  alt Admin funds the request
+    Admin->>FE: Click "Allocate" on a request
+    FE->>API: POST /allocations (fundId, requestId, amount)
+    API->>API: authenticate + requireRole(ADMIN)
+    API->>DB: transaction — insert allocation,<br/>fund.allocatedAmount += amount,<br/>request.status = APPROVED
+    DB-->>API: committed
+    API-->>FE: 201 Created
+    FE-->>Admin: toast "Fund allocated", balances update
+  else Admin rejects the request
+    Admin->>FE: Click "Reject" with a reason
+    FE->>API: POST /requests/:id/reject { reason }
+    API->>API: authenticate + requireRole(ADMIN)
+    API->>DB: request.status = REJECTED,<br/>rejectionReason, reviewedById, reviewedAt
+    DB-->>API: committed
+    API-->>FE: 200 OK
+    FE-->>Admin: request marked rejected
+  end
+
+  opt Real-world cost differs from the original allocation
+    Admin->>FE: Adjust released amount + reason
+    FE->>API: PATCH /allocations/:id/adjust { newAmount, reason }
+    API->>API: authenticate + requireRole(ADMIN)
+    API->>DB: transaction — update allocation.amountAssigned,<br/>fund.allocatedAmount += delta,<br/>insert fund_adjustment record
+    DB-->>API: committed
+    API-->>FE: 200 OK
+    FE-->>Admin: balances update, adjustment logged
+  end
 ```
 
 ---
@@ -312,6 +395,13 @@ graph TD
   R --> FR["funds.routes"] --> FC["funds.controller"]
   R --> ALR["allocations.routes"] --> ALC["allocations.controller"]
   R --> SR["stats.routes"] --> SC["stats.controller"]
+  R --> UR["users.routes"] --> UC["users.controller"]
+
+  PC --> ACCESS["services/access.js<br/>(manager → assigned-property scoping)"]
+  RC --> ACCESS
+  FC --> ACCESS
+  ALC --> ACCESS
+  SC --> ACCESS
 
   RC --> DSS["services/dss.js"]
   ALC --> DSS
@@ -323,5 +413,7 @@ graph TD
   FC --> PRISMA
   ALC --> PRISMA
   SC --> PRISMA
+  UC --> PRISMA
+  ACCESS --> PRISMA
   PRISMA --> DB[("PostgreSQL")]
 ```

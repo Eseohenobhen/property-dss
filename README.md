@@ -54,20 +54,36 @@ Plumbing (+1.2) > Security (+1.0) > HVAC (+0.8) > Flooring/Landscaping (0) > Pai
 So a roof leak outranks a paint job even at equal urgency. The model lives in one
 file (`backend/src/services/dss.js`) so it is easy to explain and adjust.
 
+A Manager doesn't fill in `urgency` / `impact` / `assetImportance` directly — they
+pick a plain-language **severity** (Low/Medium/High/Critical) and an optional
+**safety hazard** flag, and the server derives the same three inputs from that
+(`scoreInputsFromSeverity`) before scoring. An Admin can still set the numeric
+inputs directly.
+
 ---
 
 ## Roles
 
+Managers are **scoped to the properties they're assigned to** (via an
+admin-managed `property_assignments` table) — every list, dashboard, fund and
+report a manager sees is filtered down to just those properties.
+
 | Action | Manager | Admin |
 |--------|:-------:|:-----:|
-| View everything (properties, requests, funds, reports) | ✅ | ✅ |
-| Add / edit / delete properties, requests, funds | ❌ | ✅ |
-| Allocate funds to requests | ❌ | ✅ |
+| View dashboard, requests, funds & reports (assigned properties only for Manager) | ✅ | ✅ |
+| Log a maintenance request (assigned property only for Manager) | ✅ | ✅ |
+| Add / edit / delete properties | ❌ | ✅ |
+| Assign / unassign managers to a property | ❌ | ✅ |
+| Edit / delete a request, or reject it with a reason | ❌ | ✅ |
+| Add / edit / delete funds | ❌ | ✅ |
+| Allocate funds to a request | ❌ | ✅ |
+| Adjust an already-released allocation (with a reason) | ❌ | ✅ |
 
-> **Registration creates Manager (view-only) accounts.** Admin accounts are created
+> **Registration creates Manager accounts.** Admin accounts are created
 > by the database seed, not through the public sign-up form — this keeps the
-> role-based access control from being bypassed. Use the seeded admin below to
-> demonstrate the full workflow.
+> role-based access control from being bypassed. A freshly registered Manager
+> isn't assigned to any property until an Admin assigns one from the
+> Properties page. Use the seeded admin below to demonstrate the full workflow.
 
 ---
 
@@ -161,8 +177,10 @@ Open <http://localhost:3000>, sign in with the admin account you seeded, and exp
 
 ## Accounts & seeding
 
-- **Public sign-up creates Manager (view-only) accounts only.** This is enforced
-  server-side, so the role-based access control can't be bypassed from the browser.
+- **Public sign-up creates Manager accounts only**, and a new Manager starts
+  unassigned to any property — an Admin must assign one from the Properties page
+  before that manager can see or log anything. This is enforced server-side, so
+  the role-based access control can't be bypassed from the browser.
 - **The admin account is created by the database seed**, not through the UI. The
   seed reads its credentials from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (and
   the manager equivalents) in `backend/.env`, so **no passwords are committed to
@@ -204,6 +222,7 @@ property-dss/
 │  │  └─ seed.js              # demo data
 │  └─ src/
 │     ├─ services/dss.js      # ⭐ the decision engine
+│     ├─ services/access.js   # manager → assigned-property scoping
 │     ├─ controllers/         # request handlers
 │     ├─ routes/              # REST endpoints
 │     ├─ middleware/          # JWT auth, role guards, error handling
@@ -211,7 +230,9 @@ property-dss/
 ├─ frontend/
 │  ├─ app/                    # Next.js App Router pages
 │  │  ├─ login/               # auth page
-│  │  └─ (app)/               # dashboard, properties, requests, funds, reports
+│  │  ├─ print/               # printable general/property/request reports
+│  │  └─ (app)/               # dashboard, properties (+ detail), requests,
+│  │                          # funds, recommendations (manager), reports
 │  ├─ components/             # Sidebar, Modal, Badges, BarChart
 │  └─ lib/                    # api client, auth context, formatting
 └─ legacy/                    # original vanilla HTML/CSS/JS version
@@ -223,18 +244,26 @@ property-dss/
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/auth/register` | — | Create a Manager (view-only) account |
+| POST | `/auth/register` | — | Create a Manager account (unassigned to any property) |
 | POST | `/auth/login` | — | Sign in, returns a JWT |
 | GET | `/auth/me` | token | Current user |
-| GET/POST | `/properties` | token / admin | List / create properties |
+| GET/POST | `/properties` | token / admin | List / create properties (Manager sees only assigned) |
 | GET/PUT/DELETE | `/properties/:id` | token / admin | Read / update / delete |
-| GET/POST | `/requests` | token / admin | List / create requests (auto-scored) |
+| GET | `/properties/:id/managers` | admin | List managers assigned to a property |
+| POST | `/properties/:id/managers` | admin | Assign a manager to a property |
+| DELETE | `/properties/:id/managers/:managerId` | admin | Unassign a manager from a property |
+| GET/POST | `/requests` | token | List / create requests (auto-scored); Manager limited to their assigned property |
 | GET | `/requests/ranked` | token | Requests ranked by the DSS |
-| GET/POST | `/funds` | token / admin | List / create funds |
+| PUT | `/requests/:id` | admin | Update a request (rescored) |
+| POST | `/requests/:id/reject` | admin | Reject a request with a reason |
+| DELETE | `/requests/:id` | admin | Delete a request |
+| GET/POST | `/funds` | token / admin | List / create funds (Manager sees only assigned property's funds) |
 | GET | `/funds/:id/recommendation` | token | **DSS allocation recommendation** |
 | GET/POST | `/allocations` | token / admin | Audit trail / commit an allocation |
-| GET | `/stats/dashboard` | token | Dashboard KPIs |
-| GET | `/stats/reports` | token | Report analytics |
+| PATCH | `/allocations/:id/adjust` | admin | Adjust an already-released allocation, with a reason |
+| GET | `/users` | admin | List user accounts (e.g. to pick a manager to assign) |
+| GET | `/stats/dashboard` | token | Dashboard KPIs (scoped for Manager) |
+| GET | `/stats/reports` | token | Report analytics (scoped for Manager) |
 
 ---
 
